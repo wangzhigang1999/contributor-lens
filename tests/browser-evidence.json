@@ -1,0 +1,41 @@
+[
+  {
+    "mode": "zero",
+    "status": "查询成功：此窗口没有 PR 活动。"
+  },
+  {
+    "mode": "403",
+    "status": "GitHub HTTP 错误；没有足够证据判定为限流。 HTTP 403 · 失败页 1，未将前页作为完整报告。"
+  },
+  {
+    "mode": "incomplete",
+    "status": "结果不完整：API incomplete_results 或达到 1,000 条搜索上限。"
+  },
+  {
+    "mode": "rate",
+    "status": "GitHub 限流，请稍后重试并查看 Request log。 HTTP 429 · 失败页 2，未将前页作为完整报告。"
+  },
+  {
+    "copyLog": "已复制",
+    "requests": 5,
+    "peak": 1
+  },
+  {
+    "filters": true,
+    "markdown": true
+  },
+  {
+    "listRows": 35,
+    "anonymousAutoQueries": 4,
+    "manualOverBudget": true
+  },
+  {
+    "authenticatedAutoQueries": 24
+  },
+  {
+    "prIdentityAcrossTabs": true
+  },
+  {
+    "browserRestartPersistence": true
+  }
+]

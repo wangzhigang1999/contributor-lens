@@ -1,0 +1,13 @@
+{
+  "name": "contributor-lens",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/core.test.js",
+    "test:browser": "node tests/browser.test.js",
+    "test:live": "node tests/live.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.0"
+  }
+}

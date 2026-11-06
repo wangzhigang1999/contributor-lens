@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Contributor Lens</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Contributor Lens</h1>
+      <p>最近的 PR 活动，每一条都可核对。</p>
+    </header>
+    <main>
+      <form id="query">
+        <label
+          >GitHub 用户名<input
+            id="user"
+            required
+            placeholder="octocat"
+            autocomplete="off" /></label
+        ><label
+          >最近天数<input
+            id="days"
+            type="number"
+            min="1"
+            max="365"
+            value="7"
+            required
+        /></label>
+        <div id="presets">
+          <button type="button" data-days="1">1 天</button
+          ><button type="button" data-days="7">7 天</button
+          ><button type="button" data-days="30">30 天</button
+          ><button type="button" data-days="90">90 天</button>
+        </div>
+        <button class="primary" id="submit">Check activity</button>
+      </form>
+      <p id="status" role="status"></p>
+      <section id="report" hidden>
+        <p id="scope"></p>
+        <div id="counts"></div>
+        <h2>每日创建量 · 本地时区</h2>
+        <div id="chart"></div>
+        <p id="metrics"></p>
+        <h2>活跃仓库</h2>
+        <div id="repos"></div>
+        <h2>原始 PR 记录</h2>
+        <div class="filters">
+          <select id="state" aria-label="PR 状态">
+            <option value="all">全部状态</option>
+            <option value="open">Open</option>
+            <option value="merged">Merged</option>
+            <option value="closed">Closed without merge</option></select
+          ><input
+            id="search"
+            placeholder="搜索标题或 owner/repo"
+            aria-label="搜索标题或仓库"
+          />
+        </div>
+        <button id="markdown">Copy Markdown</button>
+        <p id="match"></p>
+        <div id="prs"></div>
+      </section>
+      <details>
+        <summary>本机 Token 设置</summary>
+        <p>
+          匿名模式可直接查询。可选 Token 仅保存在本机，只发送给
+          api.github.com。查询覆盖凭据可见的仓库。
+        </p>
+        <label
+          >GitHub Token<input
+            id="token"
+            type="password"
+            autocomplete="off"
+            placeholder="可选" /></label
+        ><button id="save">保存 Token</button
+        ><button id="clear">清除 Token</button>
+        <p id="auth"></p>
+      </details>
+      <details id="logdetails">
+        <summary>Request log</summary>
+        <p>最近 100 次实际请求；不含用户名、仓库、URL 或凭据。</p>
+        <button id="copylog">Copy log</button
+        ><button id="refreshlog">刷新</button>
+        <pre id="logs"></pre>
+      </details>
+      <footer>
+        仅统计窗口内创建的 PR，状态为查询时状态。不打分，不使用身份标签。
+      </footer>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

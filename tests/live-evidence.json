@@ -1,0 +1,328 @@
+[
+  {
+    "page": "https://github.com/microsoft/vscode/issues",
+    "buttons": 25
+  },
+  {
+    "afterClickUrl": "https://github.com/microsoft/vscode/issues",
+    "inlineUser": "liivats",
+    "inline": "Close\nliivats\n\n最近 7 天创建 0 PR · 0 open · 0 merged · 0 closed without merge · 查询成功，没有活动\n\nOpen full report / 完整报告"
+  },
+  {
+    "page": "https://github.com/microsoft/vscode/pulls",
+    "buttons": 25
+  },
+  {
+    "page": "https://github.com/microsoft/vscode/pull/346472",
+    "buttons": 1,
+    "author": "lszomoru"
+  },
+  {
+    "page": "https://github.com/microsoft/vscode/pull/346472/commits",
+    "buttons": 1,
+    "author": "lszomoru"
+  },
+  {
+    "page": "https://github.com/microsoft/vscode/pull/346472/files",
+    "buttons": 1,
+    "author": "lszomoru"
+  },
+  {
+    "popupStatus": "查询完成。",
+    "counts": "49 PR\n2 open\n46 merged\n1 closed without merge",
+    "firstLink": "https://github.com/microsoft/vscode/pull/346472"
+  },
+  {
+    "openedReportLink": "https://github.com/microsoft/vscode/pull/346472",
+    "title": "ci: list the Linux workspace image jobs before the Windows ones by lszomoru · Pull Request #346472 · microsoft/vscode · GitHub"
+  },
+  {
+    "copyLog": "已复制",
+    "logs": [
+      {
+        "durationMs": 387,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "9",
+          "reset": "1793950417",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:32:37.253Z"
+      },
+      {
+        "durationMs": 383,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "9",
+          "reset": "1793950417",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:32:37.259Z"
+      },
+      {
+        "durationMs": 134,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "8",
+          "reset": "1793950417",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:32:38.679Z"
+      },
+      {
+        "durationMs": 138,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "7",
+          "reset": "1793950417",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:32:38.682Z"
+      },
+      {
+        "durationMs": 1513,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "8",
+          "reset": "1793950655",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:35.035Z"
+      },
+      {
+        "durationMs": 1584,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "9",
+          "reset": "1793950655",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:35.026Z"
+      },
+      {
+        "durationMs": 560,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "59",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:37.530Z"
+      },
+      {
+        "durationMs": 10,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "59",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:39.574Z"
+      },
+      {
+        "durationMs": 17,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "59",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:41.679Z"
+      },
+      {
+        "durationMs": 448,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "7",
+          "reset": "1793950655",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:36:42.456Z"
+      },
+      {
+        "durationMs": 839,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "9",
+          "reset": "1793950798",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:38:58.307Z"
+      },
+      {
+        "durationMs": 1267,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "7",
+          "reset": "1793950798",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:39:12.272Z"
+      },
+      {
+        "durationMs": 1341,
+        "failure": null,
+        "operation": "search_prs",
+        "page": 1,
+        "rate": {
+          "limit": "10",
+          "remaining": "8",
+          "reset": "1793950798",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:39:12.256Z"
+      },
+      {
+        "durationMs": 592,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "58",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:39:14.459Z"
+      },
+      {
+        "durationMs": 16,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "58",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:39:16.846Z"
+      },
+      {
+        "durationMs": 14,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "58",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:39:19.027Z"
+      },
+      {
+        "durationMs": 837,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "57",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:40:51.274Z"
+      },
+      {
+        "durationMs": 18,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "57",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:40:54.157Z"
+      },
+      {
+        "durationMs": 10,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "57",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:40:56.392Z"
+      },
+      {
+        "durationMs": 19,
+        "failure": null,
+        "operation": "pr_author",
+        "page": null,
+        "rate": {
+          "limit": "60",
+          "remaining": "57",
+          "reset": "1793954197",
+          "retryAfter": null
+        },
+        "status": 200,
+        "time": "2026-11-06T07:40:58.505Z"
+      }
+    ]
+  },
+  {
+    "browserRestartLogCount": 20,
+    "persisted": true
+  }
+]

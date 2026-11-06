@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Contributor Lens",
+  "version": "1.0.0",
+  "description": "Inspect recent cross-repository PR activity and original records. No scores.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://api.github.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Contributor Lens"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
