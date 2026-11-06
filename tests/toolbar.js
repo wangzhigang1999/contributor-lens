@@ -32,7 +32,7 @@ try {
   await p.waitForTimeout(800);
   const cdp = await c.browser().newBrowserCDPSession();
   const { targetInfos } = await cdp.send("Target.getTargets");
-  const target = targetInfos.find((t) => t.url.endsWith("/popup.html"));
+  const target = targetInfos.find((t) => t.url.endsWith("/popup.html?view=popup"));
   if (!target) throw new Error("Popup target unavailable");
   const { sessionId } = await cdp.send("Target.attachToTarget", {
     targetId: target.targetId,
@@ -54,7 +54,25 @@ try {
       id: 1,
       method: "Runtime.evaluate",
       params: {
-        expression: `(async()=>{await new Promise(r=>setTimeout(r,300));const prefill=document.querySelector('#user').value;document.querySelector('#user').value=prefill||'lszomoru';document.querySelector('#submit').click();while(document.querySelector('#submit').disabled)await new Promise(r=>setTimeout(r,100));return {prefill,status:document.querySelector('#status').textContent,counts:document.querySelector('#counts').textContent,firstLink:document.querySelector('#prs a')?.href};})()`,
+        expression: `(async () => {
+          const fits = () => document.scrollingElement.scrollWidth === innerWidth
+            && document.scrollingElement.scrollHeight === innerHeight;
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const emptyFits = fits();
+          const user = document.querySelector("#user");
+          const submit = document.querySelector("#submit");
+          const prefill = user.value;
+          user.value = prefill || "lszomoru";
+          submit.click();
+          while (submit.disabled) await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          return {
+            prefill, emptyFits, summaryFits: fits(),
+            status: document.querySelector("#status").textContent,
+            counts: document.querySelector("#counts").textContent,
+            reportLink: document.querySelector("#full-report").href,
+          };
+        })()`,
         awaitPromise: true,
         returnByValue: true,
       },
@@ -62,7 +80,11 @@ try {
   });
   const response = await reply;
   evidence = response.result?.result?.value || response;
-  if (!evidence.status?.includes("Query complete"))
+  if (
+    !evidence.status?.includes("Query complete") ||
+    !evidence.emptyFits ||
+    !evidence.summaryFits
+  )
     throw new Error(JSON.stringify(evidence));
   console.log("TOOLBAR PASS", JSON.stringify(evidence));
 } catch (e) {

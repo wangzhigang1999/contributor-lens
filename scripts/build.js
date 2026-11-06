@@ -18,6 +18,10 @@ export const extensionFiles = [
   "popup.html",
   "popup.css",
   "popup.js",
+  "icons/icon-16.png",
+  "icons/icon-32.png",
+  "icons/icon-48.png",
+  "icons/icon-128.png",
 ];
 const temporary = await mkdtemp(path.join(tmpdir(), "contributor-lens-build-"));
 try {
@@ -44,7 +48,7 @@ try {
     );
   const stage = path.join(temporary, "extension");
   const keyFile = path.join(temporary, "signing.pem");
-  await mkdir(stage);
+  await mkdir(path.join(stage, "icons"), { recursive: true });
   await writeFile(keyFile, signingKey, { mode: 0o600 });
   const entries = {};
   for (const file of extensionFiles) {

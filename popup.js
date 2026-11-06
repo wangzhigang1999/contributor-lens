@@ -1,6 +1,13 @@
 import { statistics, markdown } from "./core.js";
 const $ = (id) => document.getElementById(id),
   send = (m) => chrome.runtime.sendMessage(m);
+const params = new URLSearchParams(location.search);
+const isPopup = params.get("view") === "popup";
+if (isPopup) {
+  document.body.classList.add("toolbar-popup");
+  $("home").href = "popup.html?view=popup";
+  $("popup-tools").hidden = false;
+}
 let result;
 const errors = {
   token_rejected: "Token rejected. Update or clear your token.",
@@ -155,8 +162,10 @@ function render(report) {
       day: "numeric",
       year: "numeric",
     });
-  $("scope").textContent =
-    `${formatDate(report.cutoff)} – ${formatDate(report.now)} · ${report.days} days${report.cached ? " · cached" : ""}`;
+  const range = `${report.days} ${report.days === 1 ? "day" : "days"}${report.cached ? " · cached" : ""}`;
+  $("scope").textContent = isPopup
+    ? range
+    : `${formatDate(report.cutoff)} – ${formatDate(report.now)} · ${range}`;
   $("scope").title =
     `${new Date(report.cutoff).toLocaleString()} to ${new Date(report.now).toLocaleString()}. ${report.cached ? "Cached within the last 10 minutes." : "Queried just now."}`;
   $("counts").replaceChildren();
@@ -169,9 +178,20 @@ function render(report) {
     const stat = element("div", "stat");
     const caption = element("span", "stat-label");
     if (state) caption.append(element("i", `state-dot ${state}`));
-    caption.append(document.createTextNode(label));
+    if (isPopup && state === "closed") {
+      caption.title = label;
+      caption.append(document.createTextNode("Closed"));
+    } else {
+      caption.append(document.createTextNode(label));
+    }
     stat.append(element("span", "stat-value", count.toLocaleString("en")), caption);
     $("counts").append(stat);
+  }
+  if (isPopup) {
+    const query = new URLSearchParams({ user: report.user, days: report.days });
+    $("full-report").href = `popup.html?${query}`;
+    $("full-report").hidden = false;
+    return;
   }
   drawChart(stats.daily);
   $("metrics").replaceChildren();
@@ -249,6 +269,7 @@ $("query").onsubmit = async (e) => {
         : "Query succeeded: no PR activity in this window.";
     render(r);
   } catch {
+    $("status").dataset.state = "error";
     $("status").textContent = "Could not connect to the extension. Reopen the popup.";
   } finally {
     $("submit").disabled = false;
@@ -279,7 +300,8 @@ $("markdown").onclick = () => {
   if (result) copy(markdown(result), $("markdown"));
 };
 async function settings() {
-  $("auth").textContent = (await send({ type: "settings" })).authenticated
+  $(isPopup ? "popup-auth" : "auth").textContent = (await send({ type: "settings" }))
+    .authenticated
     ? "Token saved"
     : "Anonymous mode";
 }
@@ -306,10 +328,19 @@ $("logdetails").ontoggle = () => {
 };
 $("copylog").onclick = async () =>
   copy(JSON.stringify(await logs(), null, 2), $("copylog"));
-await settings();
-const preset = new URL(location.href).searchParams.get("user");
-if (preset) $("user").value = preset;
-else
+const preset = params.get("user");
+if (preset) {
+  $("user").value = preset;
+  const days = Number(params.get("days"));
+  if (!isPopup && Number.isInteger(days) && days >= 1 && days <= 365) {
+    $("days").value = days;
+    syncRange();
+    $("query").requestSubmit();
+  }
+} else if (location.hash === "#token-details") {
+  $("token-details").open = true;
+  $("token-details").scrollIntoView();
+} else {
   try {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -330,3 +361,5 @@ else
           (await send({ type: "prAuthor", path: m.slice(1).join("/") })).user || "";
     }
   } catch {}
+}
+await settings();

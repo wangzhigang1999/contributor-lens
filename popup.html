@@ -8,7 +8,7 @@
   </head>
   <body>
     <header class="app-header">
-      <a class="wordmark" href="popup.html" aria-label="Contributor Lens home">
+      <a id="home" class="wordmark" href="popup.html" aria-label="Contributor Lens home">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="6" cy="5" r="2" />
           <circle cx="6" cy="19" r="2" />
@@ -84,6 +84,9 @@
           <p id="scope"></p>
         </div>
         <div id="counts" class="stats-strip"></div>
+        <a id="full-report" class="full-report" target="_blank" rel="noopener" hidden>
+          Open full report <span aria-hidden="true">↗</span>
+        </a>
         <div class="activity-layout">
           <section class="chart-panel" aria-labelledby="daily-heading">
             <div class="section-heading">
@@ -134,6 +137,12 @@
           <div id="prs"></div>
         </section>
       </section>
+      <div id="popup-tools" class="popup-tools" hidden>
+        <span id="popup-auth"></span>
+        <a href="popup.html#token-details" target="_blank" rel="noopener">
+          Settings &amp; request log <span aria-hidden="true">↗</span>
+        </a>
+      </div>
       <div class="utilities">
         <details id="token-details">
           <summary>

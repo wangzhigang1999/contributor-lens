@@ -18,6 +18,10 @@ const files = [
   "popup.html",
   "popup.css",
   "popup.js",
+  "icons/icon-16.png",
+  "icons/icon-32.png",
+  "icons/icon-48.png",
+  "icons/icon-128.png",
 ].sort();
 
 // CRX3 protobuf fields used here are all length-delimited. Reject unknown wire types.
@@ -79,6 +83,11 @@ assert.deepEqual(
 );
 for (const archive of [zip, crx.subarray(headerEnd)]) {
   const entries = unzipSync(archive);
+  // Chromium emits a directory entry when packing the icon files.
+  if (entries["icons/"]) {
+    assert.equal(entries["icons/"].length, 0);
+    delete entries["icons/"];
+  }
   assert.deepEqual(Object.keys(entries).sort(), files);
   for (const file of files)
     assert.deepEqual(Buffer.from(entries[file]), await readFile(path.join(root, file)));

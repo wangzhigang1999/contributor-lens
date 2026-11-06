@@ -1,9 +1,12 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-const ext = new URL("../", import.meta.url).pathname.replace(/\/$/, ""),
-  profile = "/tmp/contributor-lens-fixture-profile";
-await fs.rm(profile, { recursive: true, force: true });
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const ext = path.resolve(fileURLToPath(new URL("../", import.meta.url)));
+const temp = await fs.realpath(tmpdir());
+const profile = await fs.mkdtemp(path.join(temp, "cl-fixtures-"));
 const opts = {
   headless: true,
   channel: "chromium",
@@ -159,6 +162,49 @@ try {
   );
   assert.equal(await popup.locator("#markdown").innerText(), "Copied");
   evidence.push({ filters: true, markdown: true });
+
+  const compact = await c.newPage();
+  await compact.setViewportSize({ width: 350, height: 400 });
+  const popupPath = await w.evaluate(
+    () => chrome.runtime.getManifest().action.default_popup,
+  );
+  await compact.goto(`chrome-extension://${id}/${popupPath}`);
+  const assertFits = async (state) => {
+    const size = await compact.evaluate(() => {
+      const root = document.scrollingElement;
+      return { width: root.scrollWidth, height: root.scrollHeight };
+    });
+    assert(
+      size.width <= 350 && size.height <= 400,
+      `${state} toolbar popup overflowed: ${size.width}×${size.height}`,
+    );
+  };
+  await compact.locator("#popup-tools").waitFor();
+  await assertFits("Empty");
+  assert.equal(await compact.locator("#empty").isVisible(), false);
+  await compact.locator("#user").fill("record-user");
+  await compact.locator("#days").fill("13");
+  await compact.locator("#submit").click();
+  await compact.locator("#full-report").waitFor();
+  await assertFits("Summary");
+  assert.equal(await compact.locator("#chart").isVisible(), false);
+  assert.equal(await compact.locator("#counts .stat-value").first().innerText(), "3");
+  const [full] = await Promise.all([
+    c.waitForEvent("page"),
+    compact.locator("#full-report").click(),
+  ]);
+  await full.locator("#prs a").first().waitFor();
+  assert.equal(await full.locator("#user").inputValue(), "record-user");
+  assert.equal(await full.locator("#days").inputValue(), "13");
+  await full.close();
+  mode = "403";
+  await compact.locator("#user").fill("compact-error-user");
+  await compact.locator("#submit").click();
+  await compact.locator('#status[data-state="error"]').waitFor();
+  await assertFits("Error");
+  await compact.close();
+  evidence.push({ compactPopupFits: true, fullReportOpensWithQuery: true });
+
   mode = "zero";
   const rows = Array.from(
     { length: 35 },
@@ -183,28 +229,57 @@ try {
   await p.waitForTimeout(600);
   ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 4);
-  await p.locator(".cl-host").last().locator("button").click();
-  const visibleCard = p.locator(".cl-host").last().locator("section");
-  await visibleCard.waitFor({ state: "visible" });
+  const last = p.locator(".cl-host").last();
+  const lastTrigger = last.locator("button").first();
+  await lastTrigger.click();
+  const visibleCard = last.locator("section");
+  await visibleCard.getByText("No pull requests created in the last 7 days.").waitFor();
+  assert.equal(await visibleCard.locator("h4, .card-counts").count(), 0);
+  assert.equal(
+    await visibleCard.getByRole("link", { name: /Open full report/ }).count(),
+    1,
+  );
   const cardBounds = await visibleCard.boundingBox();
-  assert.equal(
-    cardBounds.y,
-    80,
-    "The card must escape the transformed, clipping list ancestor",
-  );
-  assert.equal(
-    cardBounds.x + cardBounds.width,
-    p.viewportSize().width - 20,
-    "The card stays 20px from the viewport edge",
-  );
+  const triggerBounds = await lastTrigger.boundingBox();
+  assert.equal(cardBounds.x, triggerBounds.x);
+  assert.equal(cardBounds.y + cardBounds.height, triggerBounds.y - 8);
+  // The close control still receives pointer input above the clipping ancestor.
+  await visibleCard.getByRole("button", { name: "Close activity card" }).click();
+  await visibleCard.waitFor({ state: "detached" });
+  assert.equal(await lastTrigger.getAttribute("aria-expanded"), "false");
 
   await p.waitForTimeout(600);
   ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 5);
+  await p.evaluate(() => scrollTo(0, 0));
+  const first = p.locator(".cl-host").first();
+  const firstTrigger = first.locator("button").first();
+  await firstTrigger.click();
+  const firstCard = first.locator("section");
+  await firstCard.getByText("No pull requests created in the last 7 days.").waitFor();
+  const firstTriggerBounds = await firstTrigger.boundingBox();
+  assert.equal(
+    (await firstCard.boundingBox()).y,
+    firstTriggerBounds.y + firstTriggerBounds.height + 8,
+  );
+  const second = p.locator(".cl-host").nth(1);
+  await second.evaluate((host) => (host.style.float = "right"));
+  await second.locator("button").first().click();
+  await firstCard.waitFor({ state: "detached" });
+  const secondCard = second.locator("section");
+  await secondCard.waitFor();
+  const rightEdge = await p.evaluate(() => document.scrollingElement.clientWidth - 12);
+  const secondBounds = await secondCard.boundingBox();
+  assert.equal(secondBounds.x + secondBounds.width, rightEdge);
+  await p.keyboard.press("Escape");
+  await secondCard.waitFor({ state: "detached" });
   evidence.push({
     listRows: 35,
     anonymousAutoQueries: 4,
     manualOverBudget: true,
+    cardAnchoredAboveAndBelow: true,
+    compactZeroActivityCard: true,
+    singleCardAndEscapeDismissal: true,
   });
   await p.evaluate(() => {
     const row = document.querySelector(".Box-row");
@@ -305,6 +380,9 @@ try {
     JSON.stringify(evidence, null, 2),
   );
   await Promise.race([c.close(), new Promise((r) => setTimeout(r, 3000))]);
+  const resolvedProfile = await fs.realpath(profile);
+  if (path.dirname(resolvedProfile) === temp)
+    await fs.rm(resolvedProfile, { recursive: true, force: true, maxRetries: 3 });
 }
 
 process.exit(process.exitCode || 0);

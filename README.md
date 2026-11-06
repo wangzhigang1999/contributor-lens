@@ -14,7 +14,7 @@ Captured from the English extension on public GitHub pages with live API respons
 
 ![English activity report with daily counts, repositories, and original PR links](docs/screenshots/activity-report.png)
 
-### Compact extension view
+### Narrow full-report view
 
 <img src="docs/screenshots/compact-report.png" alt="Compact English extension report at 600 pixels wide" width="480" />
 
@@ -50,6 +50,7 @@ CI also provides a signed CRX3. Chrome restricts off-store CRX installation on m
 - On an Issue or PR list, click **Check activity** next to an author. Nearby rows automatically show a seven-day summary. Expand the card for counts, repositories, and original PR links.
 - On PR details, the entry stays near the author across Conversation, Commits, and Files changed. PR identity comes from the PR header and its REST record, never from timeline commenters or reviewers.
 - Open the toolbar popup to enter a username or prefill it from the current GitHub profile or PR. Choose 1, 7, 30, or 90 days, or enter any whole number from 1 to 365.
+- The toolbar popup shows PR counts. Open the full report in a tab to see the chart and original records. Settings and the request log also open in a tab.
 - Filter the full report by PR state, search titles or `owner/repo`, and copy the report as Markdown.
 - Anonymous mode works immediately. Save an optional GitHub token in **Local token settings**. The token stays in local extension storage, is never displayed again, and is sent only to `api.github.com`.
 - **Request log** and **Copy log** provide the last 100 actual API requests, including each page independently. Logs survive browser restarts and omit usernames, repository names, URLs, credentials, raw headers, and response bodies.

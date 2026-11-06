@@ -8,8 +8,35 @@
     limit = 4,
     detail = "",
     detailUser = "",
+    openCard,
     scanTimer;
   const hosts = new Set();
+  function positionCard() {
+    if (!openCard) return;
+    const { card, trigger } = openCard;
+    if (!card.matches(":popover-open")) {
+      openCard = null;
+      return;
+    }
+    const anchor = trigger.getBoundingClientRect();
+    const { clientWidth: width, clientHeight: height } = document.scrollingElement;
+    if (anchor.bottom <= 0 || anchor.top >= height) {
+      card.hidePopover();
+      return;
+    }
+    const gap = 8,
+      edge = 12;
+    const below = height - anchor.bottom - gap - edge;
+    const above = anchor.top - gap - edge;
+    const placeAbove = card.scrollHeight + 2 > below && above > below;
+    const left = Math.max(edge, Math.min(anchor.left, width - card.offsetWidth - edge));
+    card.style.left = `${left}px`;
+    card.style.top = placeAbove ? "auto" : `${anchor.bottom + gap}px`;
+    card.style.bottom = placeAbove ? `${height - anchor.top + gap}px` : "auto";
+    card.style.maxHeight = `${Math.max(0, placeAbove ? above : below)}px`;
+  }
+  addEventListener("scroll", positionCard, true);
+  addEventListener("resize", positionCard);
   function url(h) {
     try {
       const u = new URL(h, location.href);
@@ -80,7 +107,7 @@
       .detail-trigger svg { width: 14px; height: 14px; stroke: var(--fgColor-muted, #606976); stroke-width: 1.5; flex-shrink: 0; }
       button:focus-visible, a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
       button[aria-expanded=true] { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
-      section { position: fixed; z-index: 2147483646; top: 80px; right: 20px; left: auto; bottom: auto; margin: 0; width: min(392px, calc(100vw - 40px)); max-height: calc(100vh - 104px); overflow: auto; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 12px; box-shadow: 0 8px 32px #17233514; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      section { position: fixed; inset: auto; margin: 0; width: min(392px, calc(100% - 24px)); overflow: auto; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 12px; box-shadow: 0 8px 32px #17233514; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       .card-header { padding: 20px 20px 0; }
       .card-brand { font-size: 11px; color: #727c89; margin: 0 0 8px; }
       h3 { margin: 0; font-size: 18px; font-weight: 500; color: #20242c; }
@@ -102,7 +129,7 @@
       .record small { display: block; margin-top: 4px; color: #727c89; font-size: 11px; }
       .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; padding: 12px 20px; border-top: 1px solid #e6e9ee; background: #fafbfc; }
       .card-footer span { color: #727c89; font-size: 11px; }
-      .full-report { color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 500; white-space: nowrap; }
+      .full-report { margin-left: auto; color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 500; white-space: nowrap; }
       .full-report:hover { text-decoration: underline; }
       @media (prefers-reduced-motion: reduce) { button { transition: none; } }
     `;
@@ -158,27 +185,34 @@
       if (text !== undefined) element.textContent = text;
       return element;
     };
-    b.addEventListener("click", async () => {
-      const existing = root.querySelector("section");
+    b.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const existing = root.querySelector("section:popover-open");
       if (existing) {
-        existing.remove();
-        b.setAttribute("aria-expanded", "false");
+        existing.hidePopover();
         return;
       }
       const card = node("section");
       // A popover stays above GitHub's clipping and transformed list containers.
-      card.setAttribute("popover", "manual");
+      card.setAttribute("popover", "auto");
       card.setAttribute("role", "dialog");
       card.setAttribute("aria-label", `${user} activity`);
-      const dismiss = () => {
+      card.addEventListener("toggle", () => {
+        if (card.matches(":popover-open")) return;
+        if (openCard?.card === card) openCard = null;
+        if (b.popoverTargetElement === card) {
+          b.popoverTargetElement = null;
+          b.setAttribute("aria-expanded", "false");
+        }
         card.remove();
-        b.setAttribute("aria-expanded", "false");
-        b.focus();
-      };
+      });
       const header = node("div", "card-header");
       const close = node("button", "close", "×");
       close.setAttribute("aria-label", "Close activity card");
-      close.onclick = dismiss;
+      close.onclick = () => {
+        card.hidePopover();
+        b.focus();
+      };
       header.append(
         close,
         node("p", "card-brand", "Contributor Lens"),
@@ -186,60 +220,69 @@
       );
       const info = node("p", "card-info", "Loading last 7 days…");
       card.append(header, info);
-      card.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") dismiss();
-      });
       root.append(card);
-      card.showPopover();
+      b.popoverTargetElement = card;
+      card.showPopover({ source: b });
       b.setAttribute("aria-expanded", "true");
+      openCard = { card, trigger: b };
+      positionCard();
       const response = await load();
-      if (!card.isConnected) return;
+      if (!card.matches(":popover-open")) return;
       if (!response.ok) {
         info.textContent = `Query failed: ${response.error?.kind}; page ${response.error?.page || "—"}. Earlier pages are not shown as complete results.`;
+        positionCard();
         return;
       }
-      const counts = { open: 0, merged: 0, closed: 0 },
-        repositories = {};
-      for (const pr of response.items) {
-        counts[pr.state]++;
-        repositories[pr.repo] = (repositories[pr.repo] || 0) + 1;
-      }
-      info.textContent = `${response.items.length} PRs created in the last 7 days${response.incomplete ? " · incomplete results" : ""}${response.items.length ? "" : " · query succeeded, no activity"}`;
-      const stats = node("div", "card-counts");
-      for (const [state, label] of [
-        ["open", "Open"],
-        ["merged", "Merged"],
-        ["closed", "Closed, not merged"],
-      ]) {
-        const stat = node("div");
-        stat.append(node("strong", "", counts[state]), node("span", "", label));
-        stats.append(stat);
-      }
-      const repoList = node("div", "card-repos");
-      for (const [repository, count] of Object.entries(repositories).sort(
-        (a, b) => b[1] - a[1],
-      )) {
-        const row = node("div", "repo-row");
-        const name = node("span", "repo-name", repository);
-        name.title = repository;
-        row.append(name, node("span", "repo-count", count));
-        repoList.append(row);
-      }
-      card.append(
-        stats,
-        node("h4", "", "Active repositories"),
-        repoList,
-        node("h4", "", "Original records"),
-      );
-      const records = node("div", "card-prs");
-      for (const pr of response.items) {
-        const link = node("a", "record", pr.title);
-        link.href = pr.url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        const number = new URL(pr.url).pathname.split("/").pop();
-        link.append(node("small", "", `${pr.repo} #${number} · ${pr.state}`));
-        records.append(link);
+      const hasRecords = response.items.length > 0;
+      info.textContent = hasRecords
+        ? `${response.items.length} PRs created in the last 7 days${response.incomplete ? " · incomplete results" : ""}`
+        : response.incomplete
+          ? "No matching pull requests returned · incomplete results."
+          : "No pull requests created in the last 7 days.";
+      if (hasRecords) {
+        const counts = { open: 0, merged: 0, closed: 0 },
+          repositories = {};
+        for (const pr of response.items) {
+          counts[pr.state]++;
+          repositories[pr.repo] = (repositories[pr.repo] || 0) + 1;
+        }
+        const stats = node("div", "card-counts");
+        for (const [state, label] of [
+          ["open", "Open"],
+          ["merged", "Merged"],
+          ["closed", "Closed, not merged"],
+        ]) {
+          const stat = node("div");
+          stat.append(node("strong", "", counts[state]), node("span", "", label));
+          stats.append(stat);
+        }
+        const repoList = node("div", "card-repos");
+        for (const [repository, count] of Object.entries(repositories).sort(
+          (a, b) => b[1] - a[1],
+        )) {
+          const row = node("div", "repo-row");
+          const name = node("span", "repo-name", repository);
+          name.title = repository;
+          row.append(name, node("span", "repo-count", count));
+          repoList.append(row);
+        }
+        card.append(
+          stats,
+          node("h4", "", "Active repositories"),
+          repoList,
+          node("h4", "", "Original records"),
+        );
+        const records = node("div", "card-prs");
+        for (const pr of response.items) {
+          const link = node("a", "record", pr.title);
+          link.href = pr.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          const number = new URL(pr.url).pathname.split("/").pop();
+          link.append(node("small", "", `${pr.repo} #${number} · ${pr.state}`));
+          records.append(link);
+        }
+        card.append(records);
       }
       const footer = node("div", "card-footer");
       const full = node("a", "full-report", "Open full report ↗");
@@ -249,8 +292,10 @@
         event.preventDefault();
         send({ type: "openReport", user });
       };
-      footer.append(node("span", "", "Original records. No scores."), full);
-      card.append(records, footer);
+      if (hasRecords) footer.append(node("span", "", "Original records. No scores."));
+      footer.append(full);
+      card.append(footer);
+      positionCard();
     });
     host._load = load;
     observer.observe(host);
