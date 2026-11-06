@@ -1,22 +1,22 @@
 [
   {
     "mode": "zero",
-    "status": "查询成功：此窗口没有 PR 活动。"
+    "status": "Query succeeded: no PR activity in this window."
   },
   {
     "mode": "403",
-    "status": "GitHub HTTP 错误；没有足够证据判定为限流。 HTTP 403 · 失败页 1，未将前页作为完整报告。"
+    "status": "GitHub HTTP error without evidence of rate limiting. HTTP 403 · Failed page 1. Earlier pages are not shown as a complete report."
   },
   {
     "mode": "incomplete",
-    "status": "结果不完整：API incomplete_results 或达到 1,000 条搜索上限。"
+    "status": "Incomplete results: GitHub reported incomplete_results or the 1,000-result search limit was reached."
   },
   {
     "mode": "rate",
-    "status": "GitHub 限流，请稍后重试并查看 Request log。 HTTP 429 · 失败页 2，未将前页作为完整报告。"
+    "status": "GitHub rate limit reached. Try again later and check the request log. HTTP 429 · Failed page 2. Earlier pages are not shown as a complete report."
   },
   {
-    "copyLog": "已复制",
+    "copyLog": "Copied",
     "requests": 5,
     "peak": 1
   },

@@ -2,9 +2,12 @@ export const validUser = (u) =>
   typeof u === "string" && /^[a-z\d](?:[a-z\d-]{0,38})(?:\[bot\])?$/i.test(u);
 export function validate(user, days) {
   if (!validUser(user) || !Number.isInteger(days) || days < 1 || days > 365)
-    throw Object.assign(new Error("用户名或天数无效（1–365）"), {
-      kind: "validation",
-    });
+    throw Object.assign(
+      new Error("Enter a valid username and a day range from 1 to 365."),
+      {
+        kind: "validation",
+      },
+    );
 }
 export function classify(status, h, body = "") {
   if (status === 401) return "token_rejected";
@@ -13,9 +16,7 @@ export function classify(status, h, body = "") {
     (status === 403 &&
       (h.get("x-ratelimit-remaining") === "0" ||
         h.has("retry-after") ||
-        /secondary rate limit|API rate limit exceeded|abuse detection/i.test(
-          body,
-        )))
+        /secondary rate limit|API rate limit exceeded|abuse detection/i.test(body)))
   )
     return "rate_limit";
   if (status === 422) return "account_unsearchable";
@@ -66,11 +67,7 @@ export async function search({ user, days, token, request, now = Date.now() }) {
         repo: url.pathname.split("/").slice(1, 3).join("/"),
         created: p.created_at,
         state:
-          p.state === "open"
-            ? "open"
-            : p.pull_request.merged_at
-              ? "merged"
-              : "closed",
+          p.state === "open" ? "open" : p.pull_request.merged_at ? "merged" : "closed",
       });
     }
     if ((data.items || []).length < 100 || page * 100 >= total) break;
@@ -125,7 +122,32 @@ export function statistics(r) {
     adjacent60,
   };
 }
-export function markdown(r) {
-  const s = statistics(r);
-  return `# Contributor Lens: ${r.user}\n\n${new Date(r.cutoff).toISOString()} – ${new Date(r.now).toISOString()}\n\n${r.incomplete ? "⚠ 不完整结果\n\n" : ""}${r.items.length} PR · ${s.counts.open} open · ${s.counts.merged} merged · ${s.counts.closed} closed without merge\n\n最活跃日：${s.busiest?.join(": ")} · 连续 10 分钟峰值：${s.peak10} · 相邻 ≤60 秒：${s.adjacent60}\n\n每日创建量（本地时区）\n\n| 日期 | PR |\n| --- | ---: |\n${s.daily.map(([date, n]) => `| ${date} | ${n} |`).join("\n")}\n\n活跃仓库\n\n${s.repos.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\n${r.items.map((p) => `- [${p.title.replace(/[\\\[\]]/g, "\\$&").replace(/\n/g, " ")}](${p.url}) — ${p.repo} · ${p.state} · ${p.created}`).join("\n")}\n\n仅展示窗口内创建的 PR，状态为查询时状态；不评价作者。`;
+export function markdown(report) {
+  const stats = statistics(report);
+  const escapeTitle = (title) => title.replace(/[\\\[\]]/g, "\\$&").replace(/\n/g, " ");
+  const records = report.items.map(
+    (pr) =>
+      `- [${escapeTitle(pr.title)}](${pr.url}) — ${pr.repo} · ${pr.state} · ${pr.created}`,
+  );
+  return (
+    [
+      `# Contributor Lens: ${report.user}`,
+      `${new Date(report.cutoff).toISOString()} – ${new Date(report.now).toISOString()}`,
+      ...(report.incomplete ? ["Warning: incomplete results."] : []),
+      `${report.items.length} PRs · ${stats.counts.open} open · ${stats.counts.merged} merged · ${stats.counts.closed} closed without merge`,
+      `Busiest day: ${stats.busiest?.join(": ")} · Peak in any 10 minutes: ${stats.peak10} · Adjacent creations ≤60 seconds apart: ${stats.adjacent60}`,
+      "## Daily PR creation (local time)",
+      [
+        "| Date | PRs |",
+        "| --- | ---: |",
+        ...stats.daily.map(([date, count]) => `| ${date} | ${count} |`),
+      ].join("\n"),
+      "## Active repositories",
+      stats.repos.map(([repository, count]) => `- ${repository}: ${count}`).join("\n") ||
+        "No activity.",
+      "## Original PR records",
+      records.join("\n") || "No activity.",
+      "Only PRs created within the window are counted, using their state at query time. No contributor scores.",
+    ].join("\n\n") + "\n"
+  );
 }

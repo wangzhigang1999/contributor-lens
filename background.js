@@ -77,9 +77,7 @@ export function createService(storage, fetcher = fetch) {
     if (m.type === "openReport") {
       validate(m.user, 7);
       await chrome.tabs.create({
-        url: chrome.runtime.getURL(
-          "popup.html?user=" + encodeURIComponent(m.user),
-        ),
+        url: chrome.runtime.getURL("popup.html?user=" + encodeURIComponent(m.user)),
       });
       return { ok: true };
     }
@@ -114,8 +112,7 @@ export function createService(storage, fetcher = fetch) {
         logs: (await storage.get("logs")).logs || [],
       }));
     if (m.type === "prAuthor") {
-      if (!/^[-\w.]+\/[-\w.]+\/\d+$/.test(m.path))
-        throw new Error("Invalid PR");
+      if (!/^[-\w.]+\/[-\w.]+\/\d+$/.test(m.path)) throw new Error("Invalid PR");
       const { token } = await locked(() => storage.get("token"));
       const [o, r, n] = m.path.split("/");
       const p = await request(`/repos/${o}/${r}/pulls/${n}`, {

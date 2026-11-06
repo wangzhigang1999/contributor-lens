@@ -1,40 +1,70 @@
 # Contributor Lens
 
-一个只展示 GitHub PR 活动的 Manifest V3 Chrome 扩展。不评分，不使用 Member / Contributor / First-time contributor 身份标签。无后端、遥测、远程脚本或 CDN。
+A Manifest V3 Chrome extension for inspecting an author's recent pull requests across GitHub repositories. Every record links to the original PR. No contributor scores, identity labels, backend, or telemetry.
 
-## 安装与使用
+## Install
 
-1. 打开 `chrome://extensions`，启用开发者模式，点击 **Load unpacked / 加载已解压的扩展程序**。
-2. 选择本目录（包含 `manifest.json`），无需 npm install 或构建。
-3. 打开 GitHub 仓库 Issue / PR 列表，作者旁会显示 **Check activity**。最近 7 天摘要加载后点击展开原始 PR 链接；卡片中的完整报告链接可在新标签页打开报告。
-4. PR 详情顶部也有入口，Conversation / Commits / Files changed 均从该 PR 的 REST 记录确认作者。
-5. 工具栏打开 Contributor Lens，可从当前个人主页或 PR 详情预填作者；输入用户名和 1–365 天，点击查询。可筛选状态、搜索标题或 owner/repo、复制完整 Markdown。
-6. 可在本机 Token 设置中保存或清除可选 GitHub Token。匿名模式无需设置。Token 仅存 `chrome.storage.local`，不进入缓存键或日志，只随 `api.github.com` 请求发送。Token 输入框不会回显已保存的值。
-7. **Request log** 显示最近 100 条实际请求，**Copy log** 复制 JSON；关闭和重启浏览器后仍保留。
+Download the ZIP from a [CI run](https://github.com/wangzhigang1999/contributor-lens/actions) or a [tagged release](https://github.com/wangzhigang1999/contributor-lens/releases), then:
 
-## 统计和资源边界
+1. Extract the ZIP into a folder.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the extracted folder containing `manifest.json`.
 
-- Search API：`author:<username> is:pr created:>=<UTC cutoff date>`；每页 100，按 created 降序，最多 10 页，再以精确时间戳过滤闭区间 `[now − days × 24h, now]`。仅统计窗口内创建的 PR，当前状态分为 open / merged / closed without merge，后两者用 `pull_request.merged_at` 区分。
-- 数据范围取决于匿名或 Token 的仓库可见权限。缓存中的当前状态指该次查询时，不是打开卡片时。`incomplete_results` 或总结果数达到 1,000 时明确提示不完整。
-- 分页失败只显示失败类别、HTTP 状态和页码，不把前页渲染成完整报告，也不缓存失败结果。账号不可搜索与合法零结果分开；无明确限流证据的普通 403 保留 HTTP 错误。
-- 每日图按浏览器本地日历计数，包含窗口两端所在日期和零活动日（所以 7×24 小时可能覆盖 8 个日期）。悬停柱子查看日期和数量。10 分钟峰值使用包含边界的滑动窗口；相邻 ≤60 秒次数根据 PR **创建时间** 排序计算，并非 Git commit 次数。
-- 自动查询只调度视口及上下 200px；每个列表 URL 匿名最多 4 个不同作者，认证最多 24 个，最多 2 个并发。手动查询不受作者额度限制。后台全部 API 网络请求也最多 2 个并发，不自动重试。
-- 相同作者/天数/认证代次的查询共享进行中的 Promise。本地保存 12 份精简报告，10 分钟有效；修改 Token 清空缓存，旧请求不能写回新缓存。请求日志写入串行化，不因并发丢记录。
-- 网络失败包含请求 30 秒超时；不完整结果依然可查看和导出，但带提示。GitHub 搜索索引延迟不由扩展控制。
-- 仅申请 storage、activeTab 和 api.github.com 主机权限；内容脚本在 github.com 识别页面，通过后台消息请求。页面按钮使用隔离 Shadow DOM 和 textContent，不执行 API 返回文本。
+You can also clone this repository and load its root folder directly. No build or npm install is required to run the extension.
 
-## 开发与验证
+CI also provides a signed CRX3. Chrome restricts off-store CRX installation on many platforms; use the ZIP with **Load unpacked** for ordinary local installation. A CRX on GitHub does not automatically provide Chrome Web Store publication or automatic updates. See [Chrome's distribution documentation](https://developer.chrome.com/docs/extensions/how-to/distribute/host-on-linux).
 
-Node.js 22+。安装测试依赖后运行：
+## Use
+
+- On an Issue or PR list, click **Check activity** next to an author. Nearby rows automatically show a seven-day summary. Expand the card for counts, repositories, and original PR links.
+- On PR details, the entry stays near the author across Conversation, Commits, and Files changed. PR identity comes from the PR header and its REST record, never from timeline commenters or reviewers.
+- Open the toolbar popup to enter a username or prefill it from the current GitHub profile or PR. Choose 1, 7, 30, or 90 days, or enter any whole number from 1 to 365.
+- Filter the full report by PR state, search titles or `owner/repo`, and copy the report as Markdown.
+- Anonymous mode works immediately. Save an optional GitHub token in **Local token settings**. The token stays in local extension storage, is never displayed again, and is sent only to `api.github.com`.
+- **Request log** and **Copy log** provide the last 100 actual API requests, including each page independently. Logs survive browser restarts and omit usernames, repository names, URLs, credentials, raw headers, and response bodies.
+
+## Statistics and limits
+
+The extension queries `author:<username> is:pr created:>=<UTC cutoff date>` through the REST Search API, newest first, with 100 results per page and at most 10 pages. Results are then filtered to the exact closed timestamp interval `[now − days × 24 hours, now]`.
+
+Only PRs **created** within that interval count. State is measured at query time: open, merged, or closed without merge. The two closed outcomes use `pull_request.merged_at`. Visibility depends on the anonymous session or token's repository permissions. Cached states reflect the original query time.
+
+The report includes local-calendar daily creation counts, including zero days; the busiest day; the highest count in any sliding 10-minute window; adjacent PR creations at most 60 seconds apart; and repository counts. The interval can touch more calendar dates than its day count. Adjacent creations are PR timestamps, not Git commits.
+
+GitHub's `incomplete_results` flag or a search total of at least 1,000 produces an explicit incomplete-results notice. A failed page identifies its page number and error category; preceding pages are never presented or cached as a complete report. Searchable accounts with zero activity are distinct from unsearchable accounts. A plain 403 without rate-limit evidence remains an HTTP error. Requests time out after 30 seconds and are not retried automatically. GitHub's search indexing delay is outside the extension's control.
+
+Automatic queries are limited to the viewport and 200 pixels around it: at most four different authors per anonymous list URL or 24 with a token. Manual queries remain available beyond that budget. Both automatic queries and all background API requests have a concurrency limit of two.
+
+Concurrent queries for the same author, range, and credential generation share one request. Local storage retains 12 compact reports for ten minutes. Changing the token clears old results and prevents old in-flight queries from writing into the new cache. Request-log writes are serialized.
+
+## Development
+
+Use Node.js 22 or later:
 
 ```sh
 npm ci
+npx playwright install chromium
+npm run format:check
 npm test
-node tests/live.js
-node tests/browser.test.js
-node tests/toolbar.js
+npm run test:browser
+npm run build
+npm run test:package
 ```
 
-浏览器脚本使用 Playwright + `/usr/local/bin/chromium`（可按本机路径调整）。可用 `CHROMIUM_PATH` 指定工具栏测试浏览器路径；其他浏览器脚本中的 executablePath 可按本机调整。测试依赖不参与扩展运行。真实页面与模拟响应验证的范围、限制见 [VALIDATION.md](VALIDATION.md)。
+`npm run format` formats JavaScript, JSON, HTML, CSS, Markdown, and workflow YAML with the committed Prettier configuration. `CHROMIUM_PATH` can override Playwright's Chromium executable for tests and packaging. Browser fixtures mock GitHub responses and do not need a token or live GitHub access. Runtime resources are bundled locally; development dependencies are not shipped.
 
-API 口径参考：[GitHub REST Search](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests)。
+For optional live checks, run `npm run test:live` or `npm run test:toolbar`. The latter opens the actual toolbar popup via `chrome.action.openPopup()` and operates it using CDP in headless Chromium. Set `CONTEXT_URL=https://github.com/lszomoru` to check profile prefilling. See [VALIDATION.md](VALIDATION.md) for evidence and limitations.
+
+## CI, signing, and releases
+
+The [CI workflow](.github/workflows/ci.yml) checks formatting, runs unit tests and mocked browser tests, then builds and verifies packages for pushes to `main`, version tags, and manual runs. Pull requests run checks without access to the signing key. Each successful build uploads:
+
+- `contributor-lens-<version>.crx`: Chromium-generated, signed CRX3.
+- `contributor-lens-<version>.zip`: runtime files ready for **Load unpacked** after extraction.
+- `SHA256SUMS`: checksums for both packages.
+
+The repository's `CRX_PRIVATE_KEY` Actions secret supplies the stable RSA signing key, keeping the packaged extension ID consistent between builds. It is not committed or uploaded. Keep a private backup if you manage this repository. Local builds without that environment variable generate a temporary key and therefore a different extension ID; forks must configure their own secret for stable IDs. Key rotation changes the extension ID.
+
+To publish a release, update `manifest.json` and the npm package version, commit, and push a matching tag such as `v1.0.1`. CI rejects tags that do not match the manifest, then publishes the verified assets to a GitHub Release. Live GitHub checks are deliberately excluded from CI to avoid external rate limits and changing public data.
+
+API reference: [GitHub REST Search](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests).

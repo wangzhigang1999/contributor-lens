@@ -6,7 +6,7 @@ const ext = new URL("../", import.meta.url).pathname.replace(/\/$/, ""),
 await fs.rm(profile, { recursive: true, force: true });
 const opts = {
   headless: true,
-  executablePath: "/usr/local/bin/chromium",
+  executablePath: process.env.CHROMIUM_PATH,
   args: [
     `--disable-extensions-except=${ext}`,
     `--load-extension=${ext}`,
@@ -81,17 +81,15 @@ async function query(user) {
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.locator("#user").fill(user);
   await popup.locator("#submit").click();
-  await popup.waitForFunction(
-    () => !document.querySelector("#submit").disabled,
-  );
+  await popup.waitForFunction(() => !document.querySelector("#submit").disabled);
   return popup.locator("#status").innerText();
 }
 try {
   for (const [m, user, pattern] of [
-    ["zero", "zero-user", /没有 PR 活动/],
-    ["403", "forbidden-user", /HTTP 错误/],
-    ["incomplete", "partial-user", /结果不完整/],
-    ["rate", "rate-user", /失败页 2/],
+    ["zero", "zero-user", /no PR activity/],
+    ["403", "forbidden-user", /HTTP error/],
+    ["incomplete", "partial-user", /Incomplete results/],
+    ["rate", "rate-user", /Failed page 2/],
   ]) {
     mode = m;
     const status = await query(user);
@@ -110,8 +108,8 @@ try {
   assert(peak <= 2);
   await popup.locator("#logdetails").evaluate((e) => (e.open = true));
   await popup.locator("#copylog").click();
-  assert.equal(await popup.locator("#copylog").innerText(), "已复制");
-  evidence.push({ copyLog: "已复制", requests, peak });
+  assert.equal(await popup.locator("#copylog").innerText(), "Copied");
+  evidence.push({ copyLog: "Copied", requests, peak });
   mode = "records";
   await query("record-user");
   assert.equal(await popup.locator("#prs a").count(), 3);
@@ -121,7 +119,7 @@ try {
   await popup.locator("#search").fill("Needle");
   assert.equal(await popup.locator("#prs a").count(), 1);
   await popup.locator("#markdown").click();
-  assert.equal(await popup.locator("#markdown").innerText(), "已复制");
+  assert.equal(await popup.locator("#markdown").innerText(), "Copied");
   evidence.push({ filters: true, markdown: true });
   mode = "zero";
   const rows = Array.from(
@@ -139,14 +137,8 @@ try {
   await p.goto("https://github.com/o/r/issues");
   await p.waitForTimeout(1600);
   assert.equal(await p.locator(".cl-host").count(), 35);
-  assert.equal(
-    await p.locator(".cl-host").first().getAttribute("data-user"),
-    "person0",
-  );
-  assert.equal(
-    await p.locator("#foreign .cl-host, #other .cl-host").count(),
-    0,
-  );
+  assert.equal(await p.locator(".cl-host").first().getAttribute("data-user"), "person0");
+  assert.equal(await p.locator("#foreign .cl-host, #other .cl-host").count(), 0);
   let ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 4);
   await p.locator(".cl-host").last().scrollIntoViewIfNeeded();
@@ -180,8 +172,7 @@ try {
   await p.waitForTimeout(600);
   await p.evaluate(() => scrollTo(0, 500));
   await p.waitForTimeout(1000);
-  const authLogs = (await w.evaluate(() => chrome.storage.local.get("logs")))
-    .logs;
+  const authLogs = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   const authQueries = authLogs.length - 5;
   assert(authQueries <= 24 && authQueries > 4);
   evidence.push({ authenticatedAutoQueries: authQueries });
@@ -196,14 +187,10 @@ try {
   for (const suffix of ["", "/commits", "/files"]) {
     await p.goto("https://github.com/o/r/pull/9" + suffix);
     await p.waitForTimeout(700);
-    assert.equal(
-      await p.locator(".cl-host").getAttribute("data-user"),
-      "pr-owner",
-    );
+    assert.equal(await p.locator(".cl-host").getAttribute("data-user"), "pr-owner");
   }
   evidence.push({ prIdentityAcrossTabs: true });
-  const stored = (await w.evaluate(() => chrome.storage.local.get("logs")))
-    .logs;
+  const stored = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   await Promise.race([c.close(), new Promise((r) => setTimeout(r, 3000))]);
   c = await chromium.launchPersistentContext(profile, opts);
   const re = await c.newPage();

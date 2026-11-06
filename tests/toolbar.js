@@ -5,7 +5,7 @@ const c = await chromium.launchPersistentContext(
   "/tmp/contributor-lens-toolbar-profile",
   {
     headless: true,
-    executablePath: process.env.CHROMIUM_PATH || "/usr/local/bin/chromium",
+    executablePath: process.env.CHROMIUM_PATH,
     args: [
       `--disable-extensions-except=${ext}`,
       `--load-extension=${ext}`,
@@ -18,15 +18,12 @@ let evidence;
 try {
   const p = await c.newPage();
   await p.goto(
-    process.env.CONTEXT_URL ||
-      "https://github.com/microsoft/vscode/pull/346472",
+    process.env.CONTEXT_URL || "https://github.com/microsoft/vscode/pull/346472",
     {
       waitUntil: "domcontentloaded",
     },
   );
-  await p
-    .locator(process.env.CONTEXT_URL ? ".vcard-username" : ".cl-host")
-    .waitFor();
+  await p.locator(process.env.CONTEXT_URL ? ".vcard-username" : ".cl-host").waitFor();
   await p.bringToFront();
   const w = c.serviceWorkers()[0];
   await w.evaluate(() => chrome.storage.local.set({ cache: [] }));
@@ -41,10 +38,7 @@ try {
     flatten: false,
   });
   const reply = new Promise((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error("Popup query timeout")),
-      90000,
-    );
+    const timer = setTimeout(() => reject(new Error("Popup query timeout")), 90000);
     cdp.on("Target.receivedMessageFromTarget", (e) => {
       const msg = JSON.parse(e.message);
       if (e.sessionId === sessionId && msg.id === 1) {
@@ -67,7 +61,7 @@ try {
   });
   const response = await reply;
   evidence = response.result?.result?.value || response;
-  if (!evidence.status?.includes("查询完成"))
+  if (!evidence.status?.includes("Query complete"))
     throw new Error(JSON.stringify(evidence));
   console.log("TOOLBAR PASS", JSON.stringify(evidence));
 } catch (e) {

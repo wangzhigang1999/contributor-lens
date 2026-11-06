@@ -4,7 +4,7 @@ const profile = "/tmp/contributor-lens-live-profile",
   ext = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const opts = {
   headless: true,
-  executablePath: "/usr/local/bin/chromium",
+  executablePath: process.env.CHROMIUM_PATH,
   args: [
     `--disable-extensions-except=${ext}`,
     `--load-extension=${ext}`,
@@ -28,10 +28,7 @@ try {
     buttons: await p.locator(".cl-host").count(),
   });
   await p.waitForTimeout(4000);
-  const inlineUser = await p
-    .locator(".cl-host")
-    .first()
-    .getAttribute("data-user");
+  const inlineUser = await p.locator(".cl-host").first().getAttribute("data-user");
   await p.locator(".cl-host").first().locator("button").click();
   await p.waitForTimeout(7000);
   evidence.push({
@@ -67,18 +64,14 @@ try {
       author: await p.locator(".cl-host").first().getAttribute("data-user"),
     });
   }
-  const currentAuthor = await p
-    .locator(".cl-host")
-    .first()
-    .getAttribute("data-user");
+  const currentAuthor = await p.locator(".cl-host").first().getAttribute("data-user");
   const popup = await c.newPage();
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.locator("#user").fill(currentAuthor);
   await popup.locator("#query").evaluate((f) => f.requestSubmit());
-  await popup.waitForFunction(
-    () => !document.querySelector("#submit").disabled,
-    { timeout: 120000 },
-  );
+  await popup.waitForFunction(() => !document.querySelector("#submit").disabled, {
+    timeout: 120000,
+  });
   evidence.push({
     popupStatus: await popup.locator("#status").innerText(),
     counts: await popup.locator("#counts").innerText(),

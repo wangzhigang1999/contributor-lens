@@ -3,14 +3,15 @@ const $ = (id) => document.getElementById(id),
   send = (m) => chrome.runtime.sendMessage(m);
 let result;
 const errors = {
-  token_rejected: "Token 被拒绝，请更新或清除 Token。",
-  permission: "凭据权限不足。",
-  account_unsearchable: "账号不可搜索：不存在或当前权限不可见。",
-  rate_limit: "GitHub 限流，请稍后重试并查看 Request log。",
-  http: "GitHub HTTP 错误；没有足够证据判定为限流。",
-  network: "网络请求失败，请检查连接。",
-  credentials_changed: "Token 已更改，请重新查询。",
-  validation: "请输入有效用户名和 1–365 天。",
+  token_rejected: "Token rejected. Update or clear your token.",
+  permission: "Your credentials do not have the required permissions.",
+  account_unsearchable:
+    "Account is not searchable: it does not exist or is not visible to your credentials.",
+  rate_limit: "GitHub rate limit reached. Try again later and check the request log.",
+  http: "GitHub HTTP error without evidence of rate limiting.",
+  network: "Network request failed. Check your connection.",
+  credentials_changed: "Your token changed. Run the query again.",
+  validation: "Enter a valid username and a day range from 1 to 365.",
 };
 function records() {
   if (!result) return;
@@ -22,7 +23,7 @@ function records() {
       (p.title + " " + p.repo).toLowerCase().includes(q),
   );
   $("prs").replaceChildren();
-  $("match").textContent = `显示 ${ps.length} / ${result.items.length} 条`;
+  $("match").textContent = `Showing ${ps.length} of ${result.items.length} PRs`;
   for (const p of ps) {
     const row = document.createElement("article"),
       a = document.createElement("a"),
@@ -40,7 +41,7 @@ function render(r) {
   const s = statistics(r);
   $("report").hidden = false;
   $("scope").textContent =
-    `${r.user} · ${new Date(r.cutoff).toLocaleString()} 至 ${new Date(r.now).toLocaleString()}${r.cached ? " · 10 分钟内缓存" : ""}`;
+    `${r.user} · ${new Date(r.cutoff).toLocaleString()} to ${new Date(r.now).toLocaleString()}${r.cached ? " · cached within the last 10 minutes" : ""}`;
   $("counts").replaceChildren();
   for (const text of [
     `${r.items.length} PR`,
@@ -62,15 +63,15 @@ function render(r) {
     $("chart").append(bar);
   }
   $("metrics").textContent =
-    `最活跃日 ${s.busiest?.[0]}（${s.busiest?.[1]} PR；并列取首日） · 连续 10 分钟峰值 ${s.peak10} · 相邻创建间隔 ≤60 秒 ${s.adjacent60} 次`;
+    `Busiest day: ${s.busiest?.[0]} (${s.busiest?.[1]} PRs; earliest day wins ties) · Peak in any 10 minutes: ${s.peak10} · Adjacent creations ≤60 seconds apart: ${s.adjacent60}`;
   $("repos").textContent =
-    s.repos.map(([r, n]) => `${r}: ${n}`).join(" · ") || "没有活动";
+    s.repos.map(([r, n]) => `${r}: ${n}`).join(" · ") || "No activity";
   records();
 }
 $("query").onsubmit = async (e) => {
   e.preventDefault();
   $("submit").disabled = true;
-  $("status").textContent = "正在查询…";
+  $("status").textContent = "Checking activity…";
   $("report").hidden = true;
   result = null;
   try {
@@ -81,18 +82,18 @@ $("query").onsubmit = async (e) => {
     });
     if (!r.ok) {
       $("status").textContent =
-        `${errors[r.error?.kind] || "查询失败"}${r.error?.status ? " HTTP " + r.error.status : ""}${r.error?.page ? " · 失败页 " + r.error.page + "，未将前页作为完整报告。" : ""}`;
+        `${errors[r.error?.kind] || "Query failed"}${r.error?.status ? " HTTP " + r.error.status : ""}${r.error?.page ? " · Failed page " + r.error.page + ". Earlier pages are not shown as a complete report." : ""}`;
       return;
     }
     result = r;
     $("status").textContent = r.incomplete
-      ? "结果不完整：API incomplete_results 或达到 1,000 条搜索上限。"
+      ? "Incomplete results: GitHub reported incomplete_results or the 1,000-result search limit was reached."
       : r.items.length
-        ? "查询完成。"
-        : "查询成功：此窗口没有 PR 活动。";
+        ? "Query complete."
+        : "Query succeeded: no PR activity in this window.";
     render(r);
   } catch {
-    $("status").textContent = "扩展连接失败，请重新打开。";
+    $("status").textContent = "Could not connect to the extension. Reopen the popup.";
   } finally {
     $("submit").disabled = false;
   }
@@ -105,9 +106,9 @@ $("search").oninput = records;
 async function copy(text, button) {
   try {
     await navigator.clipboard.writeText(text);
-    button.textContent = "已复制";
+    button.textContent = "Copied";
   } catch {
-    button.textContent = "复制失败，请重试";
+    button.textContent = "Copy failed. Try again.";
   }
 }
 $("markdown").onclick = () => {
@@ -115,15 +116,15 @@ $("markdown").onclick = () => {
 };
 async function settings() {
   $("auth").textContent = (await send({ type: "settings" })).authenticated
-    ? "已保存 Token"
-    : "匿名模式";
+    ? "Token saved"
+    : "Anonymous mode";
 }
 async function token(value) {
   await send({ type: "token", token: value });
   $("token").value = "";
   result = null;
   $("report").hidden = true;
-  $("status").textContent = "凭据已更新，旧缓存已清除。";
+  $("status").textContent = "Credentials updated. Previous cached results were cleared.";
   await settings();
 }
 $("save").onclick = () => token($("token").value);
@@ -160,7 +161,6 @@ else
         u.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
       if (m)
         $("user").value =
-          (await send({ type: "prAuthor", path: m.slice(1).join("/") })).user ||
-          "";
+          (await send({ type: "prAuthor", path: m.slice(1).join("/") })).user || "";
     }
   } catch {}

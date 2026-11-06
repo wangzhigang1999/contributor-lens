@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -9,18 +9,18 @@
   <body>
     <header>
       <h1>Contributor Lens</h1>
-      <p>最近的 PR 活动，每一条都可核对。</p>
+      <p>Recent PR activity, linked to the original records.</p>
     </header>
     <main>
       <form id="query">
         <label
-          >GitHub 用户名<input
+          >GitHub username<input
             id="user"
             required
             placeholder="octocat"
             autocomplete="off" /></label
         ><label
-          >最近天数<input
+          >Lookback days<input
             id="days"
             type="number"
             min="1"
@@ -29,10 +29,10 @@
             required
         /></label>
         <div id="presets">
-          <button type="button" data-days="1">1 天</button
-          ><button type="button" data-days="7">7 天</button
-          ><button type="button" data-days="30">30 天</button
-          ><button type="button" data-days="90">90 天</button>
+          <button type="button" data-days="1">1 day</button
+          ><button type="button" data-days="7">7 days</button
+          ><button type="button" data-days="30">30 days</button
+          ><button type="button" data-days="90">90 days</button>
         </div>
         <button class="primary" id="submit">Check activity</button>
       </form>
@@ -40,22 +40,22 @@
       <section id="report" hidden>
         <p id="scope"></p>
         <div id="counts"></div>
-        <h2>每日创建量 · 本地时区</h2>
+        <h2>Daily PR creation · local time</h2>
         <div id="chart"></div>
         <p id="metrics"></p>
-        <h2>活跃仓库</h2>
+        <h2>Active repositories</h2>
         <div id="repos"></div>
-        <h2>原始 PR 记录</h2>
+        <h2>Original PR records</h2>
         <div class="filters">
-          <select id="state" aria-label="PR 状态">
-            <option value="all">全部状态</option>
+          <select id="state" aria-label="PR state">
+            <option value="all">All states</option>
             <option value="open">Open</option>
             <option value="merged">Merged</option>
             <option value="closed">Closed without merge</option></select
           ><input
             id="search"
-            placeholder="搜索标题或 owner/repo"
-            aria-label="搜索标题或仓库"
+            placeholder="Search titles or owner/repo"
+            aria-label="Search titles or repositories"
           />
         </div>
         <button id="markdown">Copy Markdown</button>
@@ -63,30 +63,32 @@
         <div id="prs"></div>
       </section>
       <details>
-        <summary>本机 Token 设置</summary>
+        <summary>Local token settings</summary>
         <p>
-          匿名模式可直接查询。可选 Token 仅保存在本机，只发送给
-          api.github.com。查询覆盖凭据可见的仓库。
+          Use anonymous mode immediately. An optional token stays on this device and is
+          sent only to api.github.com. Queries cover repositories visible to your
+          credentials.
         </p>
         <label
           >GitHub Token<input
             id="token"
             type="password"
             autocomplete="off"
-            placeholder="可选" /></label
-        ><button id="save">保存 Token</button
-        ><button id="clear">清除 Token</button>
+            placeholder="Optional" /></label
+        ><button id="save">Save token</button><button id="clear">Clear token</button>
         <p id="auth"></p>
       </details>
       <details id="logdetails">
         <summary>Request log</summary>
-        <p>最近 100 次实际请求；不含用户名、仓库、URL 或凭据。</p>
-        <button id="copylog">Copy log</button
-        ><button id="refreshlog">刷新</button>
+        <p>
+          The last 100 API requests. No usernames, repositories, URLs, or credentials.
+        </p>
+        <button id="copylog">Copy log</button><button id="refreshlog">Refresh</button>
         <pre id="logs"></pre>
       </details>
       <footer>
-        仅统计窗口内创建的 PR，状态为查询时状态。不打分，不使用身份标签。
+        Only PRs created within the window are counted, using their state at query time.
+        No scores or identity labels.
       </footer>
     </main>
     <script type="module" src="popup.js"></script>

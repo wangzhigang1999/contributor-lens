@@ -16,10 +16,7 @@ function storage() {
   return {
     async get(keys) {
       return Object.fromEntries(
-        (Array.isArray(keys) ? keys : [keys]).map((k) => [
-          k,
-          structuredClone(data[k]),
-        ]),
+        (Array.isArray(keys) ? keys : [keys]).map((k) => [k, structuredClone(data[k])]),
       );
     },
     async set(x) {
@@ -96,11 +93,7 @@ test("403 evidence classification", () => {
     "rate_limit",
   );
   assert.equal(
-    classify(
-      403,
-      new Headers(),
-      "Resource not accessible by personal access token",
-    ),
+    classify(403, new Headers(), "Resource not accessible by personal access token"),
     "permission",
   );
   assert.equal(classify(401, new Headers()), "token_rejected");
@@ -147,9 +140,7 @@ test("concurrent dedup, serialized logs, limit two requests, cache 12 and log 10
     return response(200, { total_count: 0, items: [] });
   });
   await Promise.all(
-    Array.from({ length: 4 }, () =>
-      svc.handle({ type: "query", user: "same", days: 7 }),
-    ),
+    Array.from({ length: 4 }, () => svc.handle({ type: "query", user: "same", days: 7 })),
   );
   assert.equal(calls, 1);
   for (let n = 0; n < 11; n++)

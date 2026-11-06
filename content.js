@@ -63,8 +63,47 @@
     anchor.after(host);
     hosts.add(host);
     const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>:host{display:inline-block;margin-left:6px;font:12px system-ui;color:#1f2328}button{cursor:pointer;border:1px solid #8c959f;border-radius:6px;background:#f6f8fa;color:#24292f;padding:3px 8px;font:inherit}section{position:fixed;z-index:2147483646;top:80px;right:20px;width:min(380px,calc(100vw - 40px));max-height:70vh;overflow:auto;background:white;border:1px solid #8c959f;border-radius:9px;box-shadow:0 8px 30px #0003;padding:16px;font:13px/1.6 system-ui}a{color:#0969da;display:block}h3{margin:0}p{margin:8px 0}.close{float:right}</style><button type="button">Check activity</button>`;
-    const b = root.querySelector("button");
+    const style = document.createElement("style");
+    style.textContent = `
+      :host {
+        display: inline-block;
+        margin-left: 6px;
+        font: 12px system-ui;
+        color: #1f2328;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid #8c959f;
+        border-radius: 6px;
+        background: #f6f8fa;
+        color: #24292f;
+        padding: 3px 8px;
+        font: inherit;
+      }
+      section {
+        position: fixed;
+        z-index: 2147483646;
+        top: 80px;
+        right: 20px;
+        width: min(380px, calc(100vw - 40px));
+        max-height: 70vh;
+        overflow: auto;
+        background: white;
+        border: 1px solid #8c959f;
+        border-radius: 9px;
+        box-shadow: 0 8px 30px #0003;
+        padding: 16px;
+        font: 13px/1.6 system-ui;
+      }
+      a { color: #0969da; display: block; }
+      h3 { margin: 0; }
+      p { margin: 8px 0; }
+      .close { float: right; }
+    `;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = "Check activity";
+    root.append(style, b);
     let result, pending;
     async function load() {
       if (pending) return pending;
@@ -108,7 +147,7 @@
       const r = await load();
       if (!card.isConnected) return;
       if (!r.ok) {
-        info.textContent = `查询失败：${r.error?.kind}，页码 ${r.error?.page || "—"}。未显示不完整前页统计。`;
+        info.textContent = `Query failed: ${r.error?.kind}; page ${r.error?.page || "—"}. Earlier pages are not shown as complete results.`;
         return;
       }
       const counts = { open: 0, merged: 0, closed: 0 },
@@ -117,7 +156,7 @@
         counts[p.state]++;
         repos[p.repo] = (repos[p.repo] || 0) + 1;
       });
-      info.textContent = `最近 7 天创建 ${r.items.length} PR · ${counts.open} open · ${counts.merged} merged · ${counts.closed} closed without merge${r.incomplete ? " · 结果不完整" : ""}${r.items.length ? "" : " · 查询成功，没有活动"}`;
+      info.textContent = `${r.items.length} PRs created in the last 7 days · ${counts.open} open · ${counts.merged} merged · ${counts.closed} closed without merge${r.incomplete ? " · incomplete results" : ""}${r.items.length ? "" : " · query succeeded, no activity"}`;
       const repo = document.createElement("p");
       repo.textContent = Object.entries(repos)
         .sort((a, b) => b[1] - a[1])
@@ -133,11 +172,9 @@
         card.append(a);
       }
       const full = document.createElement("a");
-      full.href = chrome.runtime.getURL(
-        `popup.html?user=${encodeURIComponent(user)}`,
-      );
+      full.href = chrome.runtime.getURL(`popup.html?user=${encodeURIComponent(user)}`);
       full.target = "_blank";
-      full.textContent = "Open full report / 完整报告";
+      full.textContent = "Open full report";
       full.onclick = (e) => {
         e.preventDefault();
         send({ type: "openReport", user });
@@ -196,9 +233,7 @@
         })
         .catch(() => {});
     }
-    const match = location.pathname.match(
-      /^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/.*)?$/,
-    );
+    const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/.*)?$/);
     if (match) {
       const path = match.slice(1).join("/");
       // Only the PR header may supply a DOM fallback; never inspect timeline authors.
@@ -209,8 +244,7 @@
       const initialUser = initialAuthor && author(initialAuthor);
       if (!detailUser && initialUser) {
         detailUser = initialUser;
-        if (!initialHeader.querySelector(".cl-host"))
-          make(initialAuthor, detailUser);
+        if (!initialHeader.querySelector(".cl-host")) make(initialAuthor, detailUser);
       }
       if (detail !== path) {
         detail = path;
@@ -241,9 +275,7 @@
       }
       return;
     }
-    const list = location.pathname.match(
-      /^\/([^/]+)\/([^/]+)\/(issues|pulls)\/?$/,
-    );
+    const list = location.pathname.match(/^\/([^/]+)\/([^/]+)\/(issues|pulls)\/?$/);
     if (!list) return;
     for (const a of document.querySelectorAll("a[href]")) {
       if (a.closest(".cl-host")) continue;
