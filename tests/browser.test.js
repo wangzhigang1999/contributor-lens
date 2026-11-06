@@ -6,6 +6,7 @@ const ext = new URL("../", import.meta.url).pathname.replace(/\/$/, ""),
 await fs.rm(profile, { recursive: true, force: true });
 const opts = {
   headless: true,
+  channel: "chromium",
   executablePath: process.env.CHROMIUM_PATH,
   args: [
     `--disable-extensions-except=${ext}`,

@@ -5,6 +5,7 @@ const c = await chromium.launchPersistentContext(
   "/tmp/contributor-lens-toolbar-profile",
   {
     headless: true,
+    channel: "chromium",
     executablePath: process.env.CHROMIUM_PATH,
     args: [
       `--disable-extensions-except=${ext}`,

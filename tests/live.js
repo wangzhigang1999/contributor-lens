@@ -4,6 +4,7 @@ const profile = "/tmp/contributor-lens-live-profile",
   ext = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const opts = {
   headless: true,
+  channel: "chromium",
   executablePath: process.env.CHROMIUM_PATH,
   args: [
     `--disable-extensions-except=${ext}`,
