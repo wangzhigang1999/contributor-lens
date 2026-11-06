@@ -50,9 +50,10 @@
       ? m[1]
       : null;
   }
-  function make(anchor, user) {
-    if (anchor.parentElement?.querySelector(":scope > .cl-host")) {
-      const old = anchor.parentElement.querySelector(":scope > .cl-host");
+  function make(anchor, user, detailEntry = false) {
+    const owner = detailEntry ? anchor : anchor.parentElement;
+    if (owner?.querySelector(":scope > .cl-host")) {
+      const old = owner.querySelector(":scope > .cl-host");
       if (old.dataset.user === user) return;
       old.remove();
     }
@@ -60,7 +61,9 @@
     host.className = "cl-host";
     host.dataset.user = user;
     host.addEventListener("click", (e) => e.stopPropagation());
-    anchor.after(host);
+    host.dataset.placement = detailEntry ? "detail" : "inline";
+    if (detailEntry) anchor.append(host);
+    else anchor.after(host);
     hosts.add(host);
     const root = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
@@ -69,6 +72,12 @@
       *, *::before, *::after { box-sizing: border-box; }
       button { cursor: pointer; border: 1px solid #dce1e8; border-radius: 6px; background: #fff; color: #606976; padding: 2px 8px; font: inherit; transition: background 140ms, border-color 140ms; }
       button:hover { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
+      :host([data-placement="detail"]) { display: block; width: 100%; flex-shrink: 0; margin: 12px 0 0; max-width: 100%; }
+      .detail-trigger { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 32px; padding: 6px 10px; border-color: var(--borderColor-default, #dce1e8); background: var(--bgColor-default, #fff); color: var(--fgColor-default, #20242c); text-align: left; }
+      .detail-trigger .entry-label { font-weight: 500; }
+      .detail-trigger .entry-summary { color: var(--fgColor-muted, #606976); font-variant-numeric: tabular-nums; }
+      .detail-trigger .entry-window { color: var(--fgColor-muted, #727c89); font-size: 11px; border-left: 1px solid var(--borderColor-default, #dce1e8); padding-left: 10px; }
+      .detail-trigger svg { width: 14px; height: 14px; stroke: var(--fgColor-muted, #606976); stroke-width: 1.5; flex-shrink: 0; }
       button:focus-visible, a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
       button[aria-expanded=true] { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
       section { position: fixed; z-index: 2147483646; top: 80px; right: 20px; left: auto; bottom: auto; margin: 0; width: min(392px, calc(100vw - 40px)); max-height: calc(100vh - 104px); overflow: auto; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 12px; box-shadow: 0 8px 32px #17233514; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -100,22 +109,43 @@
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = "Check activity";
+    let summary = b;
+    if (detailEntry) {
+      b.className = "detail-trigger";
+      const mark = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      mark.setAttribute("viewBox", "0 0 16 16");
+      mark.setAttribute("fill", "none");
+      mark.setAttribute("aria-hidden", "true");
+      mark.innerHTML =
+        '<circle cx="4" cy="3" r="1.5"/><circle cx="4" cy="13" r="1.5"/><circle cx="12" cy="3" r="1.5"/><path d="M4 4.5v7m8-7v3A3.5 3.5 0 0 1 8.5 11H4"/>';
+      const label = document.createElement("span");
+      label.className = "entry-label";
+      label.textContent = "Author activity";
+      summary = document.createElement("span");
+      summary.className = "entry-summary";
+      summary.textContent = "Check activity";
+      const window = document.createElement("span");
+      window.className = "entry-window";
+      window.textContent = "Last 7 days";
+      b.replaceChildren(mark, label, summary, window);
+      b.title = `View @${user}'s pull requests created in the last 7 days`;
+    }
     root.append(style, b);
     let result, pending;
     async function load() {
       if (pending) return pending;
-      b.textContent = "Checking…";
+      summary.textContent = "Checking…";
       pending = send({ type: "query", user, days: 7 })
         .then((r) => {
           result = r;
-          b.textContent = r.ok
+          summary.textContent = r.ok
             ? `${r.items.length} PR · ${r.items.filter((p) => p.state === "open").length} open${r.incomplete ? " · partial" : ""}`
             : "Retry activity";
           return r;
         })
         .catch(() => {
           result = { ok: false, error: { kind: "extension_unavailable" } };
-          b.textContent = "Retry activity";
+          summary.textContent = "Retry activity";
           return result;
         })
         .finally(() => (pending = null));
@@ -228,8 +258,9 @@
   function pump() {
     while (running < 2 && queue.length) {
       const h = queue.shift();
-      if (!h.isConnected || auto.has(h.dataset.user)) continue;
-      if (auto.size >= limit) continue;
+      if (!h.isConnected) continue;
+      // A re-rendered entry for an already-budgeted author still needs its summary.
+      if (!auto.has(h.dataset.user) && auto.size >= limit) continue;
       auto.add(h.dataset.user);
       running++;
       h._load().finally(() => {
@@ -277,42 +308,46 @@
     const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/.*)?$/);
     if (match) {
       const path = match.slice(1).join("/");
-      // Only the PR header may supply a DOM fallback; never inspect timeline authors.
-      const initialHeader = document.querySelector(
-        '#partial-discussion-header, .gh-header, [data-testid="issue-header"]',
+      // Resolve a header that owns the title AND its author description.
+      // TitleArea alone is not an author container and must never receive an entry.
+      const heading = document.querySelector("main h1");
+      const header =
+        heading?.closest(
+          '[data-component="PageHeader"], .gh-header, [data-testid="issue-header"]',
+        ) ||
+        document.querySelector(
+          '.gh-header, [data-testid="issue-header"], #partial-discussion-header',
+        );
+      const description = header?.querySelector(
+        '[data-component="PageHeader.Description"], .gh-header-meta',
       );
-      const initialAuthor = initialHeader?.querySelector("a.author");
+      const initialAuthor =
+        description?.querySelector('a.author, a[data-hovercard-type="user"], a[href]') ||
+        header?.querySelector("a.author");
       const initialUser = initialAuthor && author(initialAuthor);
-      if (!detailUser && initialUser) {
-        detailUser = initialUser;
-        if (!initialHeader.querySelector(".cl-host")) make(initialAuthor, detailUser);
-      }
+      if (!detailUser && initialUser) detailUser = initialUser;
+      const mount = () => {
+        if (!detailUser || !header) return;
+        const target = description || header;
+        const existing = header.querySelector(".cl-host");
+        if (
+          existing &&
+          (existing.dataset.user !== detailUser || existing.parentElement !== target)
+        )
+          existing.remove();
+        if (!target.querySelector(":scope > .cl-host")) make(target, detailUser, true);
+      };
+      mount();
       if (detail !== path) {
         detail = path;
         try {
-          const r = await send({ type: "prAuthor", path });
+          const response = await send({ type: "prAuthor", path });
           if (detail !== path) return;
-          detailUser = r.user || detailUser;
+          detailUser = response.user || detailUser;
+          mount();
         } catch {
           detail = "";
         }
-      }
-      if (detailUser) {
-        const header =
-          document.querySelector(
-            '#partial-discussion-header, .gh-header, [data-testid="issue-header"], [class*="PageHeader-TitleArea"]',
-          ) || document.querySelector("main h1")?.parentElement;
-        const a =
-          header?.querySelector(
-            '.author, [data-hovercard-type="user"], a[href="/' +
-              CSS.escape(detailUser) +
-              '"]',
-          ) ||
-          header?.querySelector("h1") ||
-          header;
-        const existing = header?.querySelector(".cl-host");
-        if (existing && existing.dataset.user !== detailUser) existing.remove();
-        if (a && !header.querySelector(".cl-host")) make(a, detailUser);
       }
       return;
     }

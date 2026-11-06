@@ -53,3 +53,7 @@ Screenshot review found that GitHub row overflow could clip an expanded activity
 The current UI uses neutral surfaces, one blue accent, tabular counts, a labeled SVG daily chart, repository rows, and PR records with explicit states and numbers. The compact extension view and desktop report share the same data and controls. Inline cards keep all original records in a scrollable list and a separate full-report action. Existing error, token, log, filter, and export behavior remains covered by the browser suite.
 
 The README screenshots were recaptured on live GitHub pages after the redesign. No generated imagery or simulated records are used in those screenshots. Design methodology: Unslop by Damir Sokolovsky, CC BY 4.0 (linked and credited in README).
+
+## PR detail entry placement
+
+The detail entry now mounts in the PR header's author description, on a separate row. It never mounts inside the title or next to the PR number. Both legacy `.gh-header` and modern `PageHeader.Description` structures are covered by browser fixtures on Conversation, Commits, and Files changed. Removing and re-rendering the entry restores its summary without consuming another author slot. The live capture in `docs/screenshots/detail-capture.json` records the author, tab, and geometry checks. Desktop, expanded, and 430px narrow screenshots show the actual public GitHub page.

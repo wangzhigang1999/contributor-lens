@@ -1,0 +1,27 @@
+{
+  "capturedAt": "2026-11-06T11:37:02.073Z",
+  "source": "Live GitHub PR pages and REST API",
+  "tabs": [
+    {
+      "page": "https://github.com/microsoft/vscode/pull/346501",
+      "author": "SimonSiefke",
+      "text": "Author activity\n99 PR · 40 open\nLast 7 days",
+      "entryBelowAuthor": true,
+      "titleUntouched": true
+    },
+    {
+      "page": "https://github.com/microsoft/vscode/pull/346501/commits",
+      "author": "SimonSiefke",
+      "text": "Author activity\n99 PR · 40 open\nLast 7 days",
+      "entryBelowAuthor": true,
+      "titleUntouched": true
+    },
+    {
+      "page": "https://github.com/microsoft/vscode/pull/346501/files",
+      "author": "SimonSiefke",
+      "text": "Author activity\n99 PR · 40 open\nLast 7 days",
+      "entryBelowAuthor": true,
+      "titleUntouched": true
+    }
+  ]
+}

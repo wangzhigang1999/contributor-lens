@@ -23,6 +23,7 @@ let mode = "zero",
   active = 0,
   peak = 0;
 const evidence = [];
+const authenticatedAuthors = new Set();
 await c.route("https://api.github.com/**", async (route) => {
   requests++;
   active++;
@@ -31,6 +32,13 @@ await c.route("https://api.github.com/**", async (route) => {
   active--;
   const u = new URL(route.request().url()),
     page = Number(u.searchParams.get("page"));
+  if (
+    u.pathname === "/search/issues" &&
+    route.request().headers().authorization === "Bearer fixture-secret"
+  ) {
+    const author = u.searchParams.get("q")?.match(/author:([^ ]+)/)?.[1];
+    if (author) authenticatedAuthors.add(author);
+  }
   let status = 200,
     data = { total_count: 0, items: [] },
     headers = {};
@@ -76,7 +84,7 @@ await c.route("https://api.github.com/**", async (route) => {
     body: JSON.stringify(data),
   });
 });
-const p = await c.newPage();
+let p = await c.newPage();
 const popup = await c.newPage();
 async function query(user) {
   await popup.goto(`chrome-extension://${id}/popup.html`);
@@ -207,9 +215,13 @@ try {
   });
   await p.waitForTimeout(600);
   assert.equal(await p.locator(".cl-host").count(), 35);
+  // Start the authenticated URL in a fresh tab so credential broadcasts cannot
+  // schedule old-page requests into this page's quota measurement.
+  await p.close();
   await popup.evaluate(() =>
     chrome.runtime.sendMessage({ type: "token", token: "fixture-secret" }),
   );
+  p = await c.newPage();
   await p.goto("https://github.com/o/r/issues?q=changed");
   await p.waitForTimeout(600);
   await p.evaluate(() => scrollTo(0, document.body.scrollHeight));
@@ -218,22 +230,62 @@ try {
   await p.waitForTimeout(1000);
   const authLogs = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   const authQueries = authLogs.length - 5;
-  assert(authQueries <= 24 && authQueries > 4);
-  evidence.push({ authenticatedAutoQueries: authQueries });
-  // Controlled PR author differs from every identity on the timeline.
+  assert(
+    authenticatedAuthors.size <= 24 && authenticatedAuthors.size > 4,
+    `Expected 5–24 distinct authenticated authors; got ${authenticatedAuthors.size}`,
+  );
+  evidence.push({
+    authenticatedAutomaticAuthors: authenticatedAuthors.size,
+    authenticatedApiRequests: authQueries,
+  });
+  // Both GitHub headers keep the entry below the PR author, outside the title.
   await c.unroute("https://github.com/**");
-  await c.route("https://github.com/**", (r) =>
-    r.fulfill({
+  let modernHeader = false;
+  await c.route("https://github.com/**", (route) =>
+    route.fulfill({
       contentType: "text/html",
-      body: '<main><div class="gh-header"><h1>PR</h1><a class="author" href="/pr-owner">pr-owner</a></div><div class="timeline"><a class="author" href="/reviewer">reviewer</a></div></main>',
+      body: modernHeader
+        ? '<main><div data-component="PageHeader"><div data-component="TitleArea"><h1>PR title</h1><span>#9</span></div><div data-component="PageHeader.Description"><a href="/pr-owner">PR owner</a> wants to merge</div><nav>Conversation · Commits · Files</nav></div><div class="timeline"><a class="author" href="/reviewer">reviewer</a></div></main>'
+        : '<main><div class="gh-header"><h1>PR title <span>#9</span></h1><div class="gh-header-meta"><a class="author" href="/pr-owner">PR owner</a> wants to merge</div></div><div class="timeline"><a class="author" href="/reviewer">reviewer</a></div></main>',
     }),
   );
-  for (const suffix of ["", "/commits", "/files"]) {
-    await p.goto("https://github.com/o/r/pull/9" + suffix);
-    await p.waitForTimeout(700);
-    assert.equal(await p.locator(".cl-host").getAttribute("data-user"), "pr-owner");
+  for (const layout of ["legacy", "modern"]) {
+    modernHeader = layout === "modern";
+    for (const suffix of ["", "/commits", "/files"]) {
+      await p.goto("https://github.com/o/r/pull/9" + suffix);
+      const entry = p.locator('.cl-host[data-placement="detail"]');
+      await entry.waitFor();
+      assert.equal(await entry.count(), 1);
+      assert.equal(await entry.getAttribute("data-user"), "pr-owner");
+      assert.equal(
+        await p.locator('h1 .cl-host, [data-component="TitleArea"] .cl-host').count(),
+        0,
+      );
+      assert.equal(await entry.locator(".entry-label").innerText(), "Author activity");
+      const title = await p.locator("h1").boundingBox();
+      const author = await p.locator('a[href="/pr-owner"]').boundingBox();
+      const bounds = await entry.boundingBox();
+      assert(bounds.y >= title.y + title.height);
+      assert(bounds.y >= author.y + author.height);
+      // GitHub can replace an existing header without navigating.
+      await entry.evaluate((host) => host.remove());
+      await entry.waitFor();
+      await p.waitForFunction(() =>
+        document
+          .querySelector('.cl-host[data-placement="detail"]')
+          ?.shadowRoot?.querySelector(".entry-summary")
+          ?.textContent.includes("PR"),
+      );
+      assert.equal(await entry.count(), 1);
+    }
   }
-  evidence.push({ prIdentityAcrossTabs: true });
+  evidence.push({
+    prIdentityAcrossTabs: true,
+    legacyAndModernHeaders: true,
+    titleUntouched: true,
+    entryBelowAuthor: true,
+    summaryRestoredAfterRerender: true,
+  });
   const stored = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   await Promise.race([c.close(), new Promise((r) => setTimeout(r, 3000))]);
   c = await chromium.launchPersistentContext(profile, opts);

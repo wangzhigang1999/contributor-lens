@@ -20,7 +20,18 @@ Captured from the English extension on public GitHub pages with live API respons
 
 ### PR detail entry
 
-![Contributor Lens entry next to the PR author](docs/screenshots/github-pr-detail.png)
+The author activity action sits below the author description, outside the PR title and number. It stays available on Conversation, Commits, and Files changed.
+
+![Contributor Lens author activity action below the PR author description](docs/screenshots/github-pr-detail.png)
+
+<details>
+<summary>Expanded activity and narrow layout</summary>
+
+![Expanded PR author activity card](docs/screenshots/github-pr-detail-expanded.png)
+
+<img src="docs/screenshots/github-pr-detail-narrow.png" alt="Author activity action on a narrow GitHub PR page" width="360" />
+
+</details>
 
 ## Install
 
@@ -100,3 +111,5 @@ API reference: [GitHub REST Search](https://docs.github.com/en/rest/search/searc
 To refresh the README screenshots from live GitHub pages, run `npm run screenshots`. Capture metadata is saved in `docs/screenshots/capture.json`.
 
 Design approach informed by [Unslop](https://github.com/heydamir/unslop) by [Damir Sokolovsky](https://heydamir.design/unslop), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+To check and recapture only the PR detail entry across all three tabs, run `CHROMIUM_PATH=/path/to/chromium node scripts/detail-screenshots.js`.

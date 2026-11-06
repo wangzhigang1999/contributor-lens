@@ -20,7 +20,9 @@
     {
       "file": "github-pr-detail.png",
       "page": "https://github.com/microsoft/vscode/pull/346501",
-      "username": "SimonSiefke"
+      "username": "SimonSiefke",
+      "capturedAt": "2026-11-06T11:37:02.073Z",
+      "entryPlacement": "Separate row below the PR author description"
     }
   ]
 }

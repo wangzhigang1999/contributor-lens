@@ -30,10 +30,15 @@
     "manualOverBudget": true
   },
   {
-    "authenticatedAutoQueries": 24
+    "authenticatedAutomaticAuthors": 24,
+    "authenticatedApiRequests": 25
   },
   {
-    "prIdentityAcrossTabs": true
+    "prIdentityAcrossTabs": true,
+    "legacyAndModernHeaders": true,
+    "titleUntouched": true,
+    "entryBelowAuthor": true,
+    "summaryRestoredAfterRerender": true
   },
   {
     "browserRestartPersistence": true
