@@ -14,6 +14,10 @@ Captured from the English extension on public GitHub pages with live API respons
 
 ![English activity report with daily counts, repositories, and original PR links](docs/screenshots/activity-report.png)
 
+### Compact extension view
+
+<img src="docs/screenshots/compact-report.png" alt="Compact English extension report at 600 pixels wide" width="480" />
+
 ### PR detail entry
 
 ![Contributor Lens entry next to the PR author](docs/screenshots/github-pr-detail.png)
@@ -94,3 +98,5 @@ Pushing the tag runs checks, builds the signed CRX and ZIP, verifies them, and c
 API reference: [GitHub REST Search](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests).
 
 To refresh the README screenshots from live GitHub pages, run `npm run screenshots`. Capture metadata is saved in `docs/screenshots/capture.json`.
+
+Design approach informed by [Unslop](https://github.com/heydamir/unslop) by [Damir Sokolovsky](https://heydamir.design/unslop), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

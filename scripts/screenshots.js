@@ -11,7 +11,7 @@ const context = await chromium.launchPersistentContext(profile, {
   headless: true,
   channel: "chromium",
   executablePath: process.env.CHROMIUM_PATH,
-  viewport: { width: 1440, height: 1000 },
+  viewport: { width: 1440, height: 1120 },
   deviceScaleFactor: 1,
   args: [`--disable-extensions-except=${root}`, `--load-extension=${root}`],
 });
@@ -37,7 +37,9 @@ try {
   await row.locator("button").click();
   await page.waitForFunction(() =>
     [...document.querySelectorAll(".cl-host")].some((host) =>
-      host.shadowRoot?.querySelector("section p")?.textContent.includes("PRs created"),
+      host.shadowRoot
+        ?.querySelector("section .card-info")
+        ?.textContent.includes("PRs created"),
     ),
   );
   await row.locator("section").waitFor({ state: "visible" });
@@ -57,6 +59,13 @@ try {
     file: "activity-report.png",
     username,
     counts: await report.locator("#counts").innerText(),
+  });
+  await report.setViewportSize({ width: 600, height: 860 });
+  await report.screenshot({ path: path.join(output, "compact-report.png") });
+  evidence.screenshots.push({
+    file: "compact-report.png",
+    username,
+    viewport: "600 × 860 extension view",
   });
   const prUrl = await report.locator("#prs a").first().getAttribute("href");
   await page.goto(prUrl, { waitUntil: "domcontentloaded" });

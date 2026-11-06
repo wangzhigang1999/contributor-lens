@@ -13,65 +13,219 @@ const errors = {
   credentials_changed: "Your token changed. Run the query again.",
   validation: "Enter a valid username and a day range from 1 to 365.",
 };
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+const stateLabel = { open: "Open", merged: "Merged", closed: "Closed without merge" };
+function prIcon(state) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("class", `pr-glyph ${state}`);
+  svg.innerHTML =
+    '<circle cx="4" cy="3" r="1.5"/><circle cx="4" cy="13" r="1.5"/><circle cx="12" cy="3" r="1.5"/><path d="M4 4.5v7m8-7v3A3.5 3.5 0 0 1 8.5 11H4"/>';
+  return svg;
+}
 function records() {
   if (!result) return;
-  const q = $("search").value.toLowerCase(),
-    state = $("state").value;
-  const ps = result.items.filter(
-    (p) =>
-      (state === "all" || p.state === state) &&
-      (p.title + " " + p.repo).toLowerCase().includes(q),
+  const query = $("search").value.toLowerCase();
+  const state = $("state").value;
+  const matches = result.items.filter(
+    (pr) =>
+      (state === "all" || pr.state === state) &&
+      (pr.title + " " + pr.repo).toLowerCase().includes(query),
   );
   $("prs").replaceChildren();
-  $("match").textContent = `Showing ${ps.length} of ${result.items.length} PRs`;
-  for (const p of ps) {
-    const row = document.createElement("article"),
-      a = document.createElement("a"),
-      small = document.createElement("small");
-    a.href = p.url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.textContent = p.title;
-    small.textContent = `${p.repo} · ${p.state} · ${new Date(p.created).toLocaleString()}`;
-    row.append(a, small);
+  $("match").textContent = `${matches.length} of ${result.items.length} pull requests`;
+  for (const pr of matches) {
+    const row = element("article", "pr-row");
+    const content = element("div", "pr-content");
+    const link = element("a", "pr-title", pr.title);
+    link.href = pr.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    const metadata = element("p", "pr-meta");
+    const number = new URL(pr.url).pathname.split("/").pop();
+    const created = new Date(pr.created).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    metadata.append(
+      element("span", "repo", `${pr.repo} #${number}`),
+      document.createTextNode(` · ${created}`),
+    );
+    content.append(link, metadata);
+    const badge = element(
+      "span",
+      `pr-state ${pr.state}`,
+      pr.state === "closed" ? "Closed" : stateLabel[pr.state],
+    );
+    badge.title = stateLabel[pr.state];
+    row.append(prIcon(pr.state), content, badge);
     $("prs").append(row);
   }
+  if (!matches.length)
+    $("prs").append(
+      element(
+        "p",
+        "no-records",
+        result.items.length
+          ? "No pull requests match these filters"
+          : "No pull requests created in this window",
+      ),
+    );
 }
-function render(r) {
-  const s = statistics(r);
+function drawChart(daily) {
+  const ns = "http://www.w3.org/2000/svg";
+  const node = (tag, attrs, text) => {
+    const result = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) result.setAttribute(key, value);
+    if (text !== undefined) result.textContent = text;
+    return result;
+  };
+  const width = 620,
+    height = 176,
+    left = 28,
+    top = 8,
+    bottom = 28;
+  const plotHeight = height - top - bottom,
+    plotWidth = width - left - 8;
+  const peak = Math.max(0, ...daily.map(([, count]) => count));
+  const ceiling = Math.max(2, Math.ceil(peak / 2) * 2);
+  const svg = node("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+    "aria-label": `Daily PR creation, maximum ${peak} in one day`,
+  });
+  for (const value of [0, ceiling / 2, ceiling]) {
+    const y = top + plotHeight * (1 - value / ceiling);
+    svg.append(
+      node("line", { x1: left, x2: width, y1: y, y2: y, class: "grid-line" }),
+      node("text", { x: left - 8, y: y + 3, "text-anchor": "end" }, value),
+    );
+  }
+  const step = plotWidth / daily.length;
+  const labelEvery = Math.max(1, Math.ceil(daily.length / 6));
+  daily.forEach(([date, count], index) => {
+    const barHeight = count ? Math.max(2, (count / ceiling) * plotHeight) : 2;
+    const x = left + step * index + Math.min(8, step * 0.18);
+    const bar = node("rect", {
+      x,
+      y: top + plotHeight - barHeight,
+      width: Math.max(0.5, step - Math.min(16, step * 0.36)),
+      height: barHeight,
+      rx: 2,
+      class: `bar${count === peak && peak > 0 ? " peak" : ""}`,
+      tabindex: "0",
+    });
+    bar.append(node("title", {}, `${date}: ${count} PRs`));
+    svg.append(bar);
+    if (index % labelEvery === 0 || index === daily.length - 1) {
+      // Avoid overlapping the final label when two sampled dates are adjacent.
+      if (index !== daily.length - 1 && daily.length - 1 - index < labelEvery / 2) return;
+      const label = new Date(date + "T12:00:00").toLocaleDateString("en", {
+        month: "short",
+        day: "numeric",
+      });
+      svg.append(
+        node(
+          "text",
+          { x: left + step * (index + 0.5), y: height - 6, "text-anchor": "middle" },
+          label,
+        ),
+      );
+    }
+  });
+  $("chart").replaceChildren(svg);
+}
+function render(report) {
+  const stats = statistics(report);
   $("report").hidden = false;
+  $("empty").hidden = true;
+  $("identity").textContent = `@${report.user}`;
+  const formatDate = (value) =>
+    new Date(value).toLocaleDateString("en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   $("scope").textContent =
-    `${r.user} · ${new Date(r.cutoff).toLocaleString()} to ${new Date(r.now).toLocaleString()}${r.cached ? " · cached within the last 10 minutes" : ""}`;
+    `${formatDate(report.cutoff)} – ${formatDate(report.now)} · ${report.days} days${report.cached ? " · cached" : ""}`;
+  $("scope").title =
+    `${new Date(report.cutoff).toLocaleString()} to ${new Date(report.now).toLocaleString()}. ${report.cached ? "Cached within the last 10 minutes." : "Queried just now."}`;
   $("counts").replaceChildren();
-  for (const text of [
-    `${r.items.length} PR`,
-    `${s.counts.open} open`,
-    `${s.counts.merged} merged`,
-    `${s.counts.closed} closed without merge`,
+  for (const [label, count, state] of [
+    ["Created", report.items.length, ""],
+    ["Open", stats.counts.open, "open"],
+    ["Merged", stats.counts.merged, "merged"],
+    ["Closed, not merged", stats.counts.closed, "closed"],
   ]) {
-    const span = document.createElement("span");
-    span.textContent = text;
-    $("counts").append(span);
+    const stat = element("div", "stat");
+    const caption = element("span", "stat-label");
+    if (state) caption.append(element("i", `state-dot ${state}`));
+    caption.append(document.createTextNode(label));
+    stat.append(element("span", "stat-value", count.toLocaleString("en")), caption);
+    $("counts").append(stat);
   }
-  $("chart").replaceChildren();
-  const max = Math.max(1, ...s.daily.map((x) => x[1]));
-  for (const [date, n] of s.daily) {
-    const bar = document.createElement("div");
-    bar.style.height = `${Math.max(2, (n / max) * 95)}px`;
-    bar.title = `${date}: ${n}`;
-    bar.setAttribute("aria-label", bar.title);
-    $("chart").append(bar);
+  drawChart(stats.daily);
+  $("metrics").replaceChildren();
+  const busiest = new Date(stats.busiest[0] + "T12:00:00").toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+  });
+  for (const [value, label, title] of [
+    [
+      busiest,
+      `Busiest day · ${stats.busiest[1]} PRs`,
+      "Earliest day shown when multiple days share the peak",
+    ],
+    [
+      stats.peak10,
+      "Peak in any 10 min",
+      "Sliding ten-minute window, including its boundaries",
+    ],
+    [
+      stats.adjacent60,
+      "Adjacent ≤60 sec",
+      "Number of adjacent PR creation timestamps at most 60 seconds apart",
+    ],
+  ]) {
+    const metric = element("div", "metric");
+    metric.title = title;
+    metric.append(element("strong", "", value), element("span", "", label));
+    $("metrics").append(metric);
   }
-  $("metrics").textContent =
-    `Busiest day: ${s.busiest?.[0]} (${s.busiest?.[1]} PRs; earliest day wins ties) · Peak in any 10 minutes: ${s.peak10} · Adjacent creations ≤60 seconds apart: ${s.adjacent60}`;
-  $("repos").textContent =
-    s.repos.map(([r, n]) => `${r}: ${n}`).join(" · ") || "No activity";
+  $("repo-count").textContent = stats.repos.length.toLocaleString("en");
+  $("repos").replaceChildren();
+  for (const [repository, count] of stats.repos) {
+    const row = element("div", "repo-row");
+    const name = element("span", "repo-name");
+    const [owner, repo] = repository.split("/");
+    name.title = repository;
+    name.append(element("span", "owner", `${owner}/`), document.createTextNode(repo));
+    const track = element("div", "repo-track");
+    const fill = element("span");
+    fill.style.width = `${(count / Math.max(1, stats.repos[0][1])) * 100}%`;
+    track.append(fill);
+    row.append(name, element("span", "repo-value", count), track);
+    $("repos").append(row);
+  }
+  if (!stats.repos.length)
+    $("repos").append(element("p", "subtle", "No activity in this window"));
   records();
 }
 $("query").onsubmit = async (e) => {
   e.preventDefault();
   $("submit").disabled = true;
   $("status").textContent = "Checking activity…";
+  $("status").dataset.state = "loading";
+  $("empty").hidden = true;
   $("report").hidden = true;
   result = null;
   try {
@@ -81,11 +235,13 @@ $("query").onsubmit = async (e) => {
       days: Number($("days").value),
     });
     if (!r.ok) {
+      $("status").dataset.state = "error";
       $("status").textContent =
         `${errors[r.error?.kind] || "Query failed"}${r.error?.status ? " HTTP " + r.error.status : ""}${r.error?.page ? " · Failed page " + r.error.page + ". Earlier pages are not shown as a complete report." : ""}`;
       return;
     }
     result = r;
+    $("status").dataset.state = r.incomplete ? "partial" : "success";
     $("status").textContent = r.incomplete
       ? "Incomplete results: GitHub reported incomplete_results or the 1,000-result search limit was reached."
       : r.items.length
@@ -98,9 +254,17 @@ $("query").onsubmit = async (e) => {
     $("submit").disabled = false;
   }
 };
-$("presets").onclick = (e) => {
-  if (e.target.dataset.days) $("days").value = e.target.dataset.days;
+function syncRange() {
+  for (const button of $("presets").querySelectorAll("button"))
+    button.setAttribute("aria-pressed", String(button.dataset.days === $("days").value));
+}
+$("presets").onclick = (event) => {
+  if (event.target.dataset.days) {
+    $("days").value = event.target.dataset.days;
+    syncRange();
+  }
 };
+$("days").oninput = syncRange;
 $("state").onchange = records;
 $("search").oninput = records;
 async function copy(text, button) {
@@ -124,6 +288,8 @@ async function token(value) {
   $("token").value = "";
   result = null;
   $("report").hidden = true;
+  $("empty").hidden = false;
+  $("status").dataset.state = "success";
   $("status").textContent = "Credentials updated. Previous cached results were cleared.";
   await settings();
 }

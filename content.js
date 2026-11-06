@@ -65,44 +65,37 @@
     const root = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     style.textContent = `
-      :host {
-        display: inline-block;
-        margin-left: 6px;
-        font: 12px system-ui;
-        color: #1f2328;
-      }
-      button {
-        cursor: pointer;
-        border: 1px solid #8c959f;
-        border-radius: 6px;
-        background: #f6f8fa;
-        color: #24292f;
-        padding: 3px 8px;
-        font: inherit;
-      }
-      section {
-        position: fixed;
-        z-index: 2147483646;
-        top: 80px;
-        right: 20px;
-        left: auto;
-        bottom: auto;
-        margin: 0;
-        box-sizing: border-box;
-        width: min(380px, calc(100vw - 40px));
-        max-height: 70vh;
-        overflow: auto;
-        background: white;
-        border: 1px solid #8c959f;
-        border-radius: 9px;
-        box-shadow: 0 8px 30px #0003;
-        padding: 16px;
-        font: 13px/1.6 system-ui;
-      }
-      a { color: #0969da; display: block; }
-      h3 { margin: 0; }
-      p { margin: 8px 0; }
-      .close { float: right; }
+      :host { display: inline-block; margin-left: 6px; color: #20242c; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      *, *::before, *::after { box-sizing: border-box; }
+      button { cursor: pointer; border: 1px solid #dce1e8; border-radius: 6px; background: #fff; color: #606976; padding: 2px 8px; font: inherit; transition: background 140ms, border-color 140ms; }
+      button:hover { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
+      button:focus-visible, a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+      button[aria-expanded=true] { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
+      section { position: fixed; z-index: 2147483646; top: 80px; right: 20px; left: auto; bottom: auto; margin: 0; width: min(392px, calc(100vw - 40px)); max-height: calc(100vh - 104px); overflow: auto; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 12px; box-shadow: 0 8px 32px #17233514; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .card-header { padding: 20px 20px 0; }
+      .card-brand { font-size: 11px; color: #727c89; margin: 0 0 8px; }
+      h3 { margin: 0; font-size: 18px; font-weight: 500; color: #20242c; }
+      p { margin: 0; }
+      .card-info { padding: 8px 20px 16px; color: #727c89; font-size: 12px; }
+      .close { float: right; padding: 2px 6px; min-width: 24px; border: 0; background: transparent; color: #727c89; font-size: 18px; line-height: 20px; }
+      .card-counts { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 20px 16px; border-bottom: 1px solid #e6e9ee; gap: 16px; }
+      .card-counts strong { display: block; color: #20242c; font-size: 24px; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; }
+      .card-counts span { display: block; color: #727c89; font-size: 11px; margin-top: 4px; }
+      h4 { margin: 0; padding: 16px 20px 8px; font-size: 12px; font-weight: 500; }
+      .card-repos { max-height: 104px; overflow: auto; padding: 0 20px 8px; }
+      .repo-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 0; color: #606976; font-size: 12px; }
+      .repo-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .repo-count { color: #727c89; font-family: ui-monospace, Consolas, monospace; }
+      .card-prs { max-height: 216px; overflow: auto; padding: 0 20px; }
+      .record { display: block; padding: 10px 0; border-bottom: 1px solid #edf0f4; color: #20242c; text-decoration: none; font-size: 12px; line-height: 1.5; }
+      .record:last-child { border-bottom: 0; }
+      .record:hover { color: #2563eb; }
+      .record small { display: block; margin-top: 4px; color: #727c89; font-size: 11px; }
+      .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; padding: 12px 20px; border-top: 1px solid #e6e9ee; background: #fafbfc; }
+      .card-footer span { color: #727c89; font-size: 11px; }
+      .full-report { color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 500; white-space: nowrap; }
+      .full-report:hover { text-decoration: underline; }
+      @media (prefers-reduced-motion: reduce) { button { transition: none; } }
     `;
     const b = document.createElement("button");
     b.type = "button";
@@ -128,65 +121,106 @@
         .finally(() => (pending = null));
       return pending;
     }
+    b.setAttribute("aria-expanded", "false");
+    const node = (tag, className, text) => {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    };
     b.addEventListener("click", async () => {
-      if (root.querySelector("section")) {
-        root.querySelector("section").remove();
+      const existing = root.querySelector("section");
+      if (existing) {
+        existing.remove();
+        b.setAttribute("aria-expanded", "false");
         return;
       }
-      const card = document.createElement("section");
-      // The top layer escapes GitHub row clipping and containing blocks.
+      const card = node("section");
+      // A popover stays above GitHub's clipping and transformed list containers.
       card.setAttribute("popover", "manual");
       card.setAttribute("role", "dialog");
       card.setAttribute("aria-label", `${user} activity`);
-      const close = document.createElement("button");
-      close.className = "close";
-      close.textContent = "Close";
-      close.onclick = () => card.remove();
-      card.append(close);
-      const title = document.createElement("h3");
-      title.textContent = user;
-      card.append(title);
-      const info = document.createElement("p");
-      info.textContent = "Loading last 7 days…";
-      card.append(info);
+      const dismiss = () => {
+        card.remove();
+        b.setAttribute("aria-expanded", "false");
+        b.focus();
+      };
+      const header = node("div", "card-header");
+      const close = node("button", "close", "×");
+      close.setAttribute("aria-label", "Close activity card");
+      close.onclick = dismiss;
+      header.append(
+        close,
+        node("p", "card-brand", "Contributor Lens"),
+        node("h3", "", `@${user}`),
+      );
+      const info = node("p", "card-info", "Loading last 7 days…");
+      card.append(header, info);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") dismiss();
+      });
       root.append(card);
       card.showPopover();
-      const r = await load();
+      b.setAttribute("aria-expanded", "true");
+      const response = await load();
       if (!card.isConnected) return;
-      if (!r.ok) {
-        info.textContent = `Query failed: ${r.error?.kind}; page ${r.error?.page || "—"}. Earlier pages are not shown as complete results.`;
+      if (!response.ok) {
+        info.textContent = `Query failed: ${response.error?.kind}; page ${response.error?.page || "—"}. Earlier pages are not shown as complete results.`;
         return;
       }
       const counts = { open: 0, merged: 0, closed: 0 },
-        repos = {};
-      r.items.forEach((p) => {
-        counts[p.state]++;
-        repos[p.repo] = (repos[p.repo] || 0) + 1;
-      });
-      info.textContent = `${r.items.length} PRs created in the last 7 days · ${counts.open} open · ${counts.merged} merged · ${counts.closed} closed without merge${r.incomplete ? " · incomplete results" : ""}${r.items.length ? "" : " · query succeeded, no activity"}`;
-      const repo = document.createElement("p");
-      repo.textContent = Object.entries(repos)
-        .sort((a, b) => b[1] - a[1])
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(" · ");
-      card.append(repo);
-      for (const p of r.items) {
-        const a = document.createElement("a");
-        a.href = p.url;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.textContent = `${p.repo} — ${p.title} (${p.state})`;
-        card.append(a);
+        repositories = {};
+      for (const pr of response.items) {
+        counts[pr.state]++;
+        repositories[pr.repo] = (repositories[pr.repo] || 0) + 1;
       }
-      const full = document.createElement("a");
+      info.textContent = `${response.items.length} PRs created in the last 7 days${response.incomplete ? " · incomplete results" : ""}${response.items.length ? "" : " · query succeeded, no activity"}`;
+      const stats = node("div", "card-counts");
+      for (const [state, label] of [
+        ["open", "Open"],
+        ["merged", "Merged"],
+        ["closed", "Closed, not merged"],
+      ]) {
+        const stat = node("div");
+        stat.append(node("strong", "", counts[state]), node("span", "", label));
+        stats.append(stat);
+      }
+      const repoList = node("div", "card-repos");
+      for (const [repository, count] of Object.entries(repositories).sort(
+        (a, b) => b[1] - a[1],
+      )) {
+        const row = node("div", "repo-row");
+        const name = node("span", "repo-name", repository);
+        name.title = repository;
+        row.append(name, node("span", "repo-count", count));
+        repoList.append(row);
+      }
+      card.append(
+        stats,
+        node("h4", "", "Active repositories"),
+        repoList,
+        node("h4", "", "Original records"),
+      );
+      const records = node("div", "card-prs");
+      for (const pr of response.items) {
+        const link = node("a", "record", pr.title);
+        link.href = pr.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        const number = new URL(pr.url).pathname.split("/").pop();
+        link.append(node("small", "", `${pr.repo} #${number} · ${pr.state}`));
+        records.append(link);
+      }
+      const footer = node("div", "card-footer");
+      const full = node("a", "full-report", "Open full report ↗");
       full.href = chrome.runtime.getURL(`popup.html?user=${encodeURIComponent(user)}`);
       full.target = "_blank";
-      full.textContent = "Open full report";
-      full.onclick = (e) => {
-        e.preventDefault();
+      full.onclick = (event) => {
+        event.preventDefault();
         send({ type: "openReport", user });
       };
-      card.append(full);
+      footer.append(node("span", "", "Original records. No scores."), full);
+      card.append(records, footer);
     });
     host._load = load;
     observer.observe(host);

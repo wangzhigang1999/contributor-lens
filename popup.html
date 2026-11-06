@@ -2,93 +2,181 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Contributor Lens</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
-      <h1>Contributor Lens</h1>
-      <p>Recent PR activity, linked to the original records.</p>
+    <header class="app-header">
+      <a class="wordmark" href="popup.html" aria-label="Contributor Lens home">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="6" cy="5" r="2" />
+          <circle cx="6" cy="19" r="2" />
+          <circle cx="18" cy="5" r="2" />
+          <path d="M6 7v10m12-10v3a5 5 0 0 1-5 5H6" />
+        </svg>
+        <span>Contributor Lens</span>
+      </a>
+      <span class="header-note">Activity, with the receipts.</span>
     </header>
     <main>
-      <form id="query">
-        <label
-          >GitHub username<input
-            id="user"
-            required
-            placeholder="octocat"
-            autocomplete="off" /></label
-        ><label
-          >Lookback days<input
-            id="days"
-            type="number"
-            min="1"
-            max="365"
-            value="7"
-            required
-        /></label>
-        <div id="presets">
-          <button type="button" data-days="1">1 day</button
-          ><button type="button" data-days="7">7 days</button
-          ><button type="button" data-days="30">30 days</button
-          ><button type="button" data-days="90">90 days</button>
+      <form id="query" class="query-bar">
+        <div class="username-field">
+          <label for="user">GitHub username</label>
+          <div class="input-wrap">
+            <span aria-hidden="true">@</span
+            ><input
+              id="user"
+              required
+              placeholder="username"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
         </div>
-        <button class="primary" id="submit">Check activity</button>
+        <fieldset class="range-field">
+          <legend>Created in the last</legend>
+          <div class="range-controls">
+            <div id="presets">
+              <button type="button" data-days="1" aria-pressed="false">1d</button
+              ><button type="button" data-days="7" aria-pressed="true">7d</button
+              ><button type="button" data-days="30" aria-pressed="false">30d</button
+              ><button type="button" data-days="90" aria-pressed="false">90d</button>
+            </div>
+            <label class="custom-days"
+              ><input
+                id="days"
+                type="number"
+                min="1"
+                max="365"
+                value="7"
+                aria-label="Custom lookback days"
+                required
+              /><span>days</span></label
+            >
+          </div>
+        </fieldset>
+        <button class="primary" id="submit">
+          Check activity <span aria-hidden="true">↗</span>
+        </button>
       </form>
-      <p id="status" role="status"></p>
+      <p id="status" class="query-status" role="status" aria-live="polite"></p>
+      <div id="empty" class="empty-state">
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <circle cx="12" cy="10" r="4" />
+          <circle cx="12" cy="38" r="4" />
+          <circle cx="36" cy="10" r="4" />
+          <path d="M12 14v20m24-20v5a11 11 0 0 1-11 11H12" />
+        </svg>
+        <h1>A clearer view of PR activity</h1>
+        <p>
+          Look up an author. See what they’ve opened across repositories.<br />Follow any
+          record back to GitHub.
+        </p>
+        <span>Public activity works without a token</span>
+      </div>
       <section id="report" hidden>
-        <p id="scope"></p>
-        <div id="counts"></div>
-        <h2>Daily PR creation · local time</h2>
-        <div id="chart"></div>
-        <p id="metrics"></p>
-        <h2>Active repositories</h2>
-        <div id="repos"></div>
-        <h2>Original PR records</h2>
-        <div class="filters">
-          <select id="state" aria-label="PR state">
-            <option value="all">All states</option>
-            <option value="open">Open</option>
-            <option value="merged">Merged</option>
-            <option value="closed">Closed without merge</option></select
-          ><input
-            id="search"
-            placeholder="Search titles or owner/repo"
-            aria-label="Search titles or repositories"
-          />
+        <div class="report-heading">
+          <div>
+            <p id="identity" class="identity"></p>
+            <h1>Pull request activity</h1>
+          </div>
+          <p id="scope"></p>
         </div>
-        <button id="markdown">Copy Markdown</button>
-        <p id="match"></p>
-        <div id="prs"></div>
+        <div id="counts" class="stats-strip"></div>
+        <div class="activity-layout">
+          <section class="chart-panel" aria-labelledby="daily-heading">
+            <div class="section-heading">
+              <h2 id="daily-heading">Created each day</h2>
+              <span class="subtle">Local time</span>
+            </div>
+            <div
+              id="chart"
+              role="img"
+              aria-label="Daily pull request creation counts"
+            ></div>
+            <div id="metrics"></div>
+          </section>
+          <section class="repo-panel" aria-labelledby="repo-heading">
+            <div class="section-heading">
+              <h2 id="repo-heading">Active repositories</h2>
+              <span id="repo-count" class="subtle"></span>
+            </div>
+            <div id="repos"></div>
+          </section>
+        </div>
+        <section class="records-panel" aria-labelledby="records-heading">
+          <div class="section-heading records-heading">
+            <div>
+              <h2 id="records-heading">The original records</h2>
+              <p id="match"></p>
+            </div>
+            <button id="markdown" class="quiet-button">Copy Markdown</button>
+          </div>
+          <div class="filters">
+            <div class="search-wrap">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <circle cx="8.5" cy="8.5" r="5.5" />
+                <path d="m13 13 4 4" /></svg
+              ><input
+                id="search"
+                placeholder="Search titles or repositories"
+                aria-label="Search titles or repositories"
+              />
+            </div>
+            <select id="state" aria-label="PR state">
+              <option value="all">All states</option>
+              <option value="open">Open</option>
+              <option value="merged">Merged</option>
+              <option value="closed">Closed without merge</option>
+            </select>
+          </div>
+          <div id="prs"></div>
+        </section>
       </section>
-      <details>
-        <summary>Local token settings</summary>
-        <p>
-          Use anonymous mode immediately. An optional token stays on this device and is
-          sent only to api.github.com. Queries cover repositories visible to your
-          credentials.
-        </p>
-        <label
-          >GitHub Token<input
-            id="token"
-            type="password"
-            autocomplete="off"
-            placeholder="Optional" /></label
-        ><button id="save">Save token</button><button id="clear">Clear token</button>
-        <p id="auth"></p>
-      </details>
-      <details id="logdetails">
-        <summary>Request log</summary>
-        <p>
-          The last 100 API requests. No usernames, repositories, URLs, or credentials.
-        </p>
-        <button id="copylog">Copy log</button><button id="refreshlog">Refresh</button>
-        <pre id="logs"></pre>
-      </details>
+      <div class="utilities">
+        <details id="token-details">
+          <summary>
+            <span>GitHub token</span><span id="auth" class="subtle"></span>
+          </summary>
+          <div class="detail-content">
+            <p>
+              Optional. Stored on this device and sent only to api.github.com. A token
+              includes repositories your credentials can access.
+            </p>
+            <label for="token">Personal access token</label
+            ><input
+              id="token"
+              type="password"
+              autocomplete="off"
+              placeholder="Paste a token"
+            />
+            <div class="detail-actions">
+              <button id="save">Save token</button
+              ><button id="clear" class="quiet-button">Clear token</button>
+            </div>
+          </div>
+        </details>
+        <details id="logdetails">
+          <summary>
+            <span>Request log</span><span class="subtle">On this device</span>
+          </summary>
+          <div class="detail-content">
+            <p>
+              Last 100 API requests. Usernames, repositories, URLs, and credentials are
+              omitted.
+            </p>
+            <div class="detail-actions">
+              <button id="copylog">Copy log</button
+              ><button id="refreshlog" class="quiet-button">Refresh</button>
+            </div>
+            <pre id="logs"></pre>
+          </div>
+        </details>
+      </div>
       <footer>
-        Only PRs created within the window are counted, using their state at query time.
-        No scores or identity labels.
+        <span>Created in this window. State at query time.</span
+        ><span>No scores. No identity labels.</span>
       </footer>
     </main>
     <script type="module" src="popup.js"></script>

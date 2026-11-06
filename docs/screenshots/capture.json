@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-06T09:54:24.320Z",
+  "capturedAt": "2026-11-06T10:17:38.133Z",
   "source": "Live GitHub pages and GitHub REST API",
   "screenshots": [
     {
@@ -10,7 +10,12 @@
     {
       "file": "activity-report.png",
       "username": "SimonSiefke",
-      "counts": "101 PR\n41 open\n51 merged\n9 closed without merge"
+      "counts": "101\nCreated\n41\nOpen\n51\nMerged\n9\nClosed, not merged"
+    },
+    {
+      "file": "compact-report.png",
+      "username": "SimonSiefke",
+      "viewport": "600 × 860 extension view"
     },
     {
       "file": "github-pr-detail.png",

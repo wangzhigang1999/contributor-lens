@@ -117,6 +117,29 @@ try {
   mode = "records";
   await query("record-user");
   assert.equal(await popup.locator("#prs a").count(), 3);
+  assert.deepEqual(await popup.locator("#counts .stat-value").allTextContents(), [
+    "3",
+    "1",
+    "1",
+    "1",
+  ]);
+  assert.equal(await popup.locator("#chart svg[role=img]").count(), 1);
+  assert.equal(
+    await popup.locator("#chart .bar").count(),
+    8,
+    "The seven-day chart includes zero-activity dates",
+  );
+  assert.equal(await popup.locator("#repos .repo-row").count(), 3);
+  assert.equal(await popup.locator("#prs .pr-glyph.merged").count(), 1);
+  await popup.locator('[data-days="30"]').click();
+  assert.equal(await popup.locator("#days").inputValue(), "30");
+  assert.equal(
+    await popup.locator('[data-days="30"]').getAttribute("aria-pressed"),
+    "true",
+  );
+  await popup.locator("#days").fill("365");
+  assert.equal(await popup.locator('#presets [aria-pressed="true"]').count(), 0);
+
   await popup.locator("#state").selectOption("merged");
   assert.equal(await popup.locator("#prs a").count(), 1);
   await popup.locator("#state").selectOption("all");

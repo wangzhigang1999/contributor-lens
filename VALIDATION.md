@@ -47,3 +47,9 @@ Real token access to private repositories, live rate limits, and signed-in perso
 The README images in `docs/screenshots/` were captured from the English extension using live public GitHub pages and REST responses. `capture.json` records the capture time, author, source pages, and report counts. The capture can be repeated with `npm run screenshots`.
 
 Screenshot review found that GitHub row overflow could clip an expanded activity card. Cards now use the browser popover top layer. The browser regression suite places the list inside a transformed, clipping ancestor and verifies the card stays visible at its viewport coordinates.
+
+## Unslop redesign
+
+The current UI uses neutral surfaces, one blue accent, tabular counts, a labeled SVG daily chart, repository rows, and PR records with explicit states and numbers. The compact extension view and desktop report share the same data and controls. Inline cards keep all original records in a scrollable list and a separate full-report action. Existing error, token, log, filter, and export behavior remains covered by the browser suite.
+
+The README screenshots were recaptured on live GitHub pages after the redesign. No generated imagery or simulated records are used in those screenshots. Design methodology: Unslop by Damir Sokolovsky, CC BY 4.0 (linked and credited in README).
