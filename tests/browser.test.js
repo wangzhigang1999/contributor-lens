@@ -109,6 +109,9 @@ try {
   assert(peak <= 2);
   await popup.locator("#logdetails").evaluate((e) => (e.open = true));
   await popup.locator("#copylog").click();
+  await popup.waitForFunction(
+    () => document.querySelector("#copylog").textContent === "Copied",
+  );
   assert.equal(await popup.locator("#copylog").innerText(), "Copied");
   evidence.push({ copyLog: "Copied", requests, peak });
   mode = "records";
@@ -120,6 +123,9 @@ try {
   await popup.locator("#search").fill("Needle");
   assert.equal(await popup.locator("#prs a").count(), 1);
   await popup.locator("#markdown").click();
+  await popup.waitForFunction(
+    () => document.querySelector("#markdown").textContent === "Copied",
+  );
   assert.equal(await popup.locator("#markdown").innerText(), "Copied");
   evidence.push({ filters: true, markdown: true });
   mode = "zero";
