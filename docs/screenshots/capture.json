@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-11-06T09:54:24.320Z",
+  "source": "Live GitHub pages and GitHub REST API",
+  "screenshots": [
+    {
+      "file": "github-pr-list.png",
+      "page": "https://github.com/microsoft/vscode/pulls",
+      "username": "SimonSiefke"
+    },
+    {
+      "file": "activity-report.png",
+      "username": "SimonSiefke",
+      "counts": "101 PR\n41 open\n51 merged\n9 closed without merge"
+    },
+    {
+      "file": "github-pr-detail.png",
+      "page": "https://github.com/microsoft/vscode/pull/346501",
+      "username": "SimonSiefke"
+    }
+  ]
+}

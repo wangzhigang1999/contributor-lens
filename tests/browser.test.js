@@ -137,7 +137,7 @@ try {
   await c.route("https://github.com/**", (r) =>
     r.fulfill({
       contentType: "text/html",
-      body: `<main><nav><a data-hovercard-type="user" href="/organization">organization</a></nav>${rows}<div class="Box-row" id="foreign"><a href="https://evil.test/o/r/issues/3">foreign</a><a class="author" href="/wrong">wrong</a></div><div class="Box-row" id="other"><a href="/else/repo/issues/3">other</a><a class="author" href="/wrong">wrong</a></div></main>`,
+      body: `<main style="overflow:hidden;transform:translateZ(0)"><nav><a data-hovercard-type="user" href="/organization">organization</a></nav>${rows}<div class="Box-row" id="foreign"><a href="https://evil.test/o/r/issues/3">foreign</a><a class="author" href="/wrong">wrong</a></div><div class="Box-row" id="other"><a href="/else/repo/issues/3">other</a><a class="author" href="/wrong">wrong</a></div></main>`,
     }),
   );
   await w.evaluate(() => chrome.storage.local.set({ logs: [], cache: [] }));
@@ -153,6 +153,20 @@ try {
   ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 4);
   await p.locator(".cl-host").last().locator("button").click();
+  const visibleCard = p.locator(".cl-host").last().locator("section");
+  await visibleCard.waitFor({ state: "visible" });
+  const cardBounds = await visibleCard.boundingBox();
+  assert.equal(
+    cardBounds.y,
+    80,
+    "The card must escape the transformed, clipping list ancestor",
+  );
+  assert.equal(
+    cardBounds.x + cardBounds.width,
+    p.viewportSize().width - 20,
+    "The card stays 20px from the viewport edge",
+  );
+
   await p.waitForTimeout(600);
   ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 5);

@@ -28,6 +28,9 @@ try {
   ) {
     throw new Error("Release tag must match the manifest version (v<version>).");
   }
+  if (process.env.GITHUB_REF_TYPE === "tag" && !process.env.CRX_PRIVATE_KEY) {
+    throw new Error("Tagged releases require the CRX_PRIVATE_KEY Actions secret.");
+  }
   const signingKey =
     process.env.CRX_PRIVATE_KEY ||
     generateKeyPairSync("rsa", {

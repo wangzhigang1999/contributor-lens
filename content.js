@@ -85,6 +85,10 @@
         z-index: 2147483646;
         top: 80px;
         right: 20px;
+        left: auto;
+        bottom: auto;
+        margin: 0;
+        box-sizing: border-box;
         width: min(380px, calc(100vw - 40px));
         max-height: 70vh;
         overflow: auto;
@@ -130,6 +134,8 @@
         return;
       }
       const card = document.createElement("section");
+      // The top layer escapes GitHub row clipping and containing blocks.
+      card.setAttribute("popover", "manual");
       card.setAttribute("role", "dialog");
       card.setAttribute("aria-label", `${user} activity`);
       const close = document.createElement("button");
@@ -144,6 +150,7 @@
       info.textContent = "Loading last 7 days…";
       card.append(info);
       root.append(card);
+      card.showPopover();
       const r = await load();
       if (!card.isConnected) return;
       if (!r.ok) {

@@ -169,3 +169,7 @@ footer {
     min-width: 2px;
   }
 }
+
+.primary:hover {
+  background: #1b523b;
+}

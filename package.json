@@ -10,7 +10,8 @@
     "format:check": "prettier --check .",
     "build": "node scripts/build.js",
     "test:package": "node scripts/verify-package.js",
-    "test:toolbar": "node tests/toolbar.js"
+    "test:toolbar": "node tests/toolbar.js",
+    "screenshots": "node scripts/screenshots.js"
   },
   "devDependencies": {
     "fflate": "0.8.3",

@@ -2,6 +2,22 @@
 
 A Manifest V3 Chrome extension for inspecting an author's recent pull requests across GitHub repositories. Every record links to the original PR. No contributor scores, identity labels, backend, or telemetry.
 
+## Screenshots
+
+Captured from the English extension on public GitHub pages with live API responses. Counts reflect the capture time.
+
+### Activity in the PR list
+
+![Contributor Lens activity card on a GitHub PR list](docs/screenshots/github-pr-list.png)
+
+### Full activity report
+
+![English activity report with daily counts, repositories, and original PR links](docs/screenshots/activity-report.png)
+
+### PR detail entry
+
+![Contributor Lens entry next to the PR author](docs/screenshots/github-pr-detail.png)
+
 ## Install
 
 Download the ZIP from a [CI run](https://github.com/wangzhigang1999/contributor-lens/actions) or a [tagged release](https://github.com/wangzhigang1999/contributor-lens/releases), then:
@@ -65,6 +81,16 @@ The [CI workflow](.github/workflows/ci.yml) checks formatting, runs unit tests a
 
 The repository's `CRX_PRIVATE_KEY` Actions secret supplies the stable RSA signing key, keeping the packaged extension ID consistent between builds. It is not committed or uploaded. Keep a private backup if you manage this repository. Local builds without that environment variable generate a temporary key and therefore a different extension ID; forks must configure their own secret for stable IDs. Key rotation changes the extension ID.
 
-To publish a release, update `manifest.json` and the npm package version, commit, and push a matching tag such as `v1.0.1`. CI rejects tags that do not match the manifest, then publishes the verified assets to a GitHub Release. Live GitHub checks are deliberately excluded from CI to avoid external rate limits and changing public data.
+To publish a release, update `manifest.json` and the npm package version, commit, then push a matching version tag:
+
+```sh
+# After updating both versions to 1.0.1 and committing the changes:
+git tag -a v1.0.1 -m "Contributor Lens v1.0.1"
+git push origin v1.0.1
+```
+
+Pushing the tag runs checks, builds the signed CRX and ZIP, verifies them, and creates a GitHub Release with all three assets. No manual upload is needed. CI rejects tags that do not match the manifest or lack the signing secret. Rerunning a tag workflow updates the existing release assets safely. Chromium is installed once and reused for tests and packaging. Live GitHub checks are deliberately excluded from CI to avoid external rate limits and changing public data.
 
 API reference: [GitHub REST Search](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests).
+
+To refresh the README screenshots from live GitHub pages, run `npm run screenshots`. Capture metadata is saved in `docs/screenshots/capture.json`.

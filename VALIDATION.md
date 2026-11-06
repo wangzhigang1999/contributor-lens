@@ -41,3 +41,9 @@ The browser suite writes `tests/browser-evidence.json` with current messages. It
 `npm run test:package` independently parses the Chromium-generated CRX3, verifies its signature and extension ID, rejects an altered payload, compares both archives against the runtime-file allowlist and source bytes, and checks SHA-256 hashes. It does not claim that Chrome permits off-store CRX installation on every platform.
 
 Real token access to private repositories, live rate limits, and signed-in personalized layouts were not tested. Those paths use controlled responses. The real 1,000-result search cap was not deliberately triggered. Future GitHub layout changes still require regression testing.
+
+## Current English screenshots
+
+The README images in `docs/screenshots/` were captured from the English extension using live public GitHub pages and REST responses. `capture.json` records the capture time, author, source pages, and report counts. The capture can be repeated with `npm run screenshots`.
+
+Screenshot review found that GitHub row overflow could clip an expanded activity card. Cards now use the browser popover top layer. The browser regression suite places the list inside a transformed, clipping ancestor and verifies the card stays visible at its viewport coordinates.
