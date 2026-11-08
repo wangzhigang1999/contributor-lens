@@ -50,7 +50,7 @@ Screenshot review found that GitHub row overflow could clip an expanded activity
 
 ## Unslop redesign
 
-The current UI uses neutral surfaces, one blue accent, tabular counts, a labeled SVG daily chart, repository rows, and PR records with explicit states and numbers. The compact extension view and desktop report share the same data and controls. Inline cards keep all original records in a scrollable list and a separate full-report action. Existing error, token, log, filter, and export behavior remains covered by the browser suite.
+The current UI uses neutral surfaces, one blue accent, tabular counts, a labeled SVG daily chart, repository rows, and PR records with explicit states and numbers. The toolbar shows complete counts. Inline cards preview three repositories and three recent PRs with explicit preview totals. Opening the full report loads all returned records with the selected author and range. Repository lists in the full report expand after five rows and use page scrolling. Settings and request logs have a dedicated view. Browser fixtures cover forty PRs across twelve repositories, desktop, narrow and short viewports, and access to all records from the preview. Existing error, token, log, filter, and export behavior remains covered by the browser suite.
 
 The README screenshots were recaptured on live GitHub pages after the redesign. No generated imagery or simulated records are used in those screenshots. Design methodology: Unslop by Damir Sokolovsky, CC BY 4.0 (linked and credited in README).
 

@@ -3,11 +3,20 @@ const $ = (id) => document.getElementById(id),
   send = (m) => chrome.runtime.sendMessage(m);
 const params = new URLSearchParams(location.search);
 const isPopup = params.get("view") === "popup";
+const isSettings = !isPopup && location.hash === "#token-details";
 if (isPopup) {
   document.body.classList.add("toolbar-popup");
   $("home").href = "popup.html?view=popup";
   $("popup-tools").hidden = false;
 }
+function syncSettingsView() {
+  const show = !isPopup && location.hash === "#token-details";
+  document.body.classList.toggle("settings-view", show);
+  $("settings-heading").hidden = !show;
+  if (show) $("token-details").open = true;
+}
+syncSettingsView();
+addEventListener("hashchange", syncSettingsView);
 let result;
 const errors = {
   token_rejected: "Token rejected. Update or clear your token.",
@@ -57,7 +66,7 @@ function records() {
     link.rel = "noopener noreferrer";
     const metadata = element("p", "pr-meta");
     const number = new URL(pr.url).pathname.split("/").pop();
-    const created = new Date(pr.created).toLocaleString(undefined, {
+    const created = new Date(pr.created).toLocaleString("en", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -96,8 +105,8 @@ function drawChart(daily) {
     if (text !== undefined) result.textContent = text;
     return result;
   };
-  const width = 620,
-    height = 176,
+  const width = $("chart").clientWidth || 620,
+    height = $("chart").clientHeight || 176,
     left = 28,
     top = 8,
     bottom = 28;
@@ -223,8 +232,12 @@ function render(report) {
   }
   $("repo-count").textContent = stats.repos.length.toLocaleString("en");
   $("repos").replaceChildren();
+  $("more-repos").hidden = stats.repos.length <= 5;
+  $("more-repos").setAttribute("aria-expanded", "false");
+  $("more-repos").textContent = `Show all ${stats.repos.length} repositories`;
   for (const [repository, count] of stats.repos) {
     const row = element("div", "repo-row");
+    row.hidden = $("repos").children.length >= 5;
     const name = element("span", "repo-name");
     const [owner, repo] = repository.split("/");
     name.title = repository;
@@ -288,6 +301,18 @@ $("presets").onclick = (event) => {
 $("days").oninput = syncRange;
 $("state").onchange = records;
 $("search").oninput = records;
+addEventListener("resize", () => {
+  if (result && !isPopup && $("chart").clientWidth) drawChart(statistics(result).daily);
+});
+$("more-repos").onclick = () => {
+  const expanded = $("more-repos").getAttribute("aria-expanded") !== "true";
+  for (const [index, row] of [...$("repos").children].entries())
+    row.hidden = !expanded && index >= 5;
+  $("more-repos").setAttribute("aria-expanded", String(expanded));
+  $("more-repos").textContent = expanded
+    ? "Show fewer repositories"
+    : `Show all ${$("repos").children.length} repositories`;
+};
 async function copy(text, button) {
   try {
     await navigator.clipboard.writeText(text);
@@ -337,10 +362,7 @@ if (preset) {
     syncRange();
     $("query").requestSubmit();
   }
-} else if (location.hash === "#token-details") {
-  $("token-details").open = true;
-  $("token-details").scrollIntoView();
-} else {
+} else if (!isSettings) {
   try {
     const [tab] = await chrome.tabs.query({
       active: true,

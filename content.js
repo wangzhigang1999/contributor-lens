@@ -107,27 +107,29 @@
       .detail-trigger svg { width: 14px; height: 14px; stroke: var(--fgColor-muted, #606976); stroke-width: 1.5; flex-shrink: 0; }
       button:focus-visible, a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
       button[aria-expanded=true] { color: #2563eb; border-color: #afc5ed; background: #f4f7fc; }
-      section { position: fixed; inset: auto; margin: 0; width: min(392px, calc(100% - 24px)); overflow: auto; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 12px; box-shadow: 0 8px 32px #17233514; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      .card-header { padding: 20px 20px 0; }
-      .card-brand { font-size: 11px; color: #727c89; margin: 0 0 8px; }
-      h3 { margin: 0; font-size: 18px; font-weight: 500; color: #20242c; }
+      section { position: fixed; inset: auto; margin: 0; width: min(392px, calc(100% - 24px)); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; background: #fff; color: #20242c; border: 1px solid #dce1e8; border-radius: 8px; box-shadow: 0 4px 20px #17233512; padding: 0; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .card-header { position: sticky; top: 0; z-index: 1; padding: 12px 16px 4px; background: #fff; }
+      h3 { margin: 0; font-size: 15px; line-height: 24px; font-weight: 600; color: #20242c; overflow-wrap: anywhere; }
       p { margin: 0; }
-      .card-info { padding: 8px 20px 16px; color: #727c89; font-size: 12px; }
+      .card-info { padding: 0 16px 8px; color: #606976; font-size: 12px; }
       .close { float: right; padding: 2px 6px; min-width: 24px; border: 0; background: transparent; color: #727c89; font-size: 18px; line-height: 20px; }
-      .card-counts { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 20px 16px; border-bottom: 1px solid #e6e9ee; gap: 16px; }
-      .card-counts strong { display: block; color: #20242c; font-size: 24px; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; }
-      .card-counts span { display: block; color: #727c89; font-size: 11px; margin-top: 4px; }
-      h4 { margin: 0; padding: 16px 20px 8px; font-size: 12px; font-weight: 500; }
-      .card-repos { max-height: 104px; overflow: auto; padding: 0 20px 8px; }
-      .repo-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 0; color: #606976; font-size: 12px; }
+      .card-counts { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 16px 8px; border-bottom: 1px solid #e6e9ee; gap: 16px; }
+      .card-counts strong { display: block; color: #20242c; font-size: 20px; font-weight: 600; line-height: 24px; font-variant-numeric: tabular-nums; }
+      .card-counts span { display: block; color: #606976; font-size: 11px; line-height: 16px; margin-top: 2px; }
+      .card-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 16px 4px; }
+      h4 { margin: 0; font-size: 12px; font-weight: 600; }
+      .preview-count { color: #727c89; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      .card-repos { padding: 0 16px 4px; }
+      .repo-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; color: #606976; font-size: 12px; line-height: 20px; }
       .repo-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .repo-count { color: #727c89; font-family: ui-monospace, Consolas, monospace; }
-      .card-prs { max-height: 216px; overflow: auto; padding: 0 20px; }
-      .record { display: block; padding: 10px 0; border-bottom: 1px solid #edf0f4; color: #20242c; text-decoration: none; font-size: 12px; line-height: 1.5; }
+      .card-prs { padding: 0 16px; }
+      .record { display: block; padding: 4px 0; border-bottom: 1px solid #edf0f4; color: #20242c; text-decoration: none; font-size: 12px; line-height: 18px; }
+      .record-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .record:last-child { border-bottom: 0; }
       .record:hover { color: #2563eb; }
-      .record small { display: block; margin-top: 4px; color: #727c89; font-size: 11px; }
-      .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; padding: 12px 20px; border-top: 1px solid #e6e9ee; background: #fafbfc; }
+      .record small { display: block; margin-top: 2px; color: #606976; font-size: 11px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .card-footer { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 4px; padding: 8px 16px; border-top: 1px solid #e6e9ee; background: #fafbfc; }
       .card-footer span { color: #727c89; font-size: 11px; }
       .full-report { margin-left: auto; color: #2563eb; text-decoration: none; font-size: 12px; font-weight: 500; white-space: nowrap; }
       .full-report:hover { text-decoration: underline; }
@@ -213,11 +215,7 @@
         card.hidePopover();
         b.focus();
       };
-      header.append(
-        close,
-        node("p", "card-brand", "Contributor Lens"),
-        node("h3", "", `@${user}`),
-      );
+      header.append(close, node("h3", "", `@${user}`));
       const info = node("p", "card-info", "Loading last 7 days…");
       card.append(header, info);
       root.append(card);
@@ -257,42 +255,60 @@
           stats.append(stat);
         }
         const repoList = node("div", "card-repos");
-        for (const [repository, count] of Object.entries(repositories).sort(
-          (a, b) => b[1] - a[1],
-        )) {
+        const rankedRepos = Object.entries(repositories).sort((a, b) => b[1] - a[1]);
+        for (const [repository, count] of rankedRepos.slice(0, 3)) {
           const row = node("div", "repo-row");
           const name = node("span", "repo-name", repository);
           name.title = repository;
           row.append(name, node("span", "repo-count", count));
           repoList.append(row);
         }
-        card.append(
-          stats,
-          node("h4", "", "Active repositories"),
-          repoList,
-          node("h4", "", "Original records"),
+        const repoHeading = node("div", "card-section-heading");
+        repoHeading.append(node("h4", "", "Active repositories"));
+        if (rankedRepos.length > 3)
+          repoHeading.append(
+            node("span", "preview-count", `Top 3 of ${rankedRepos.length}`),
+          );
+        const recordHeading = node("div", "card-section-heading");
+        recordHeading.append(
+          node("h4", "", "Recent pull requests"),
+          node(
+            "span",
+            "preview-count",
+            `Showing ${Math.min(3, response.items.length)} of ${response.items.length}`,
+          ),
         );
+        card.append(stats, repoHeading, repoList, recordHeading);
         const records = node("div", "card-prs");
-        for (const pr of response.items) {
-          const link = node("a", "record", pr.title);
+        const recent = [...response.items].sort(
+          (a, b) => Date.parse(b.created) - Date.parse(a.created),
+        );
+        for (const pr of recent.slice(0, 3)) {
+          const link = node("a", "record");
+          link.append(node("span", "record-title", pr.title));
+          link.title = pr.title;
           link.href = pr.url;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           const number = new URL(pr.url).pathname.split("/").pop();
-          link.append(node("small", "", `${pr.repo} #${number} · ${pr.state}`));
+          const metadata = node("small", "", `${pr.repo} #${number} · ${pr.state}`);
+          metadata.title = metadata.textContent;
+          link.append(metadata);
           records.append(link);
         }
         card.append(records);
       }
       const footer = node("div", "card-footer");
       const full = node("a", "full-report", "Open full report ↗");
-      full.href = chrome.runtime.getURL(`popup.html?user=${encodeURIComponent(user)}`);
+      full.href = chrome.runtime.getURL(
+        `popup.html?user=${encodeURIComponent(user)}&days=7`,
+      );
       full.target = "_blank";
       full.onclick = (event) => {
         event.preventDefault();
         send({ type: "openReport", user });
       };
-      if (hasRecords) footer.append(node("span", "", "Original records. No scores."));
+      footer.append(node("span", "", "Contributor Lens"));
       footer.append(full);
       card.append(footer);
       positionCard();

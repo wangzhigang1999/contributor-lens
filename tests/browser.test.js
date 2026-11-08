@@ -66,6 +66,18 @@ await c.route("https://api.github.com/**", async (route) => {
   } else if (mode === "403") status = 403;
   else if (mode === "incomplete")
     data = { total_count: 0, items: [], incomplete_results: true };
+  else if (mode === "many")
+    data = {
+      total_count: 40,
+      items: Array.from({ length: 40 }, (_, i) => ({
+        id: i,
+        title: `PR ${i + 1}: preserve credentials across authentication paths and redirects`,
+        created_at: new Date(Date.now() - 60000).toISOString(),
+        html_url: `https://github.com/o/repo${i % 12}/pull/${i + 1}`,
+        state: "open",
+        pull_request: { merged_at: null },
+      })),
+    };
   else if (mode === "records")
     data = {
       total_count: 3,
@@ -361,6 +373,84 @@ try {
     entryBelowAuthor: true,
     summaryRestoredAfterRerender: true,
   });
+  mode = "many";
+  await w.evaluate(() => chrome.storage.local.set({ cache: [] }));
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 430, height: 560 },
+    { width: 720, height: 360 },
+  ]) {
+    await p.setViewportSize(viewport);
+    await p.goto("https://github.com/o/r/pull/9");
+    const entry = p.locator(".cl-host");
+    await entry.locator("button").first().click();
+    const card = entry.locator("section");
+    await card.locator(".record").last().waitFor();
+    assert.equal(await card.locator(".record").count(), 3);
+    assert.equal(await card.locator(".repo-row").count(), 3);
+    assert.equal(await card.locator(".card-counts strong").first().innerText(), "40");
+    assert.equal(await card.getByText("Showing 3 of 40").count(), 1);
+    assert.equal(await card.getByText("Top 3 of 12").count(), 1);
+    const scrollers = await card.evaluate((card) =>
+      [card, ...card.querySelectorAll("*")]
+        .filter(
+          (node) =>
+            /^(auto|scroll)$/.test(getComputedStyle(node).overflowY) &&
+            node.scrollHeight > node.clientHeight,
+        )
+        .map((node) => node.tagName),
+    );
+    assert(
+      scrollers.length === 0 || (scrollers.length === 1 && scrollers[0] === "SECTION"),
+      "Only the card may scroll",
+    );
+    if (viewport.height === 800)
+      assert.deepEqual(scrollers, [], "The compact preview fits a desktop viewport");
+    const pageScroll = await p.evaluate(() => scrollY);
+    await card.locator(".record").last().scrollIntoViewIfNeeded();
+    if (viewport.height === 360)
+      assert(await card.evaluate((card) => card.scrollTop > 0));
+    assert.equal(await p.evaluate(() => scrollY), pageScroll);
+    const bounds = await card.boundingBox();
+    for (const selector of [".close", ".full-report", ".record:last-child"]) {
+      const control = await card.locator(selector).boundingBox();
+      assert(
+        control.y >= bounds.y && control.y + control.height <= bounds.y + bounds.height,
+      );
+    }
+    if (viewport.height === 800) {
+      const [full] = await Promise.all([
+        c.waitForEvent("page"),
+        card.getByRole("link", { name: /Open full report/ }).click(),
+      ]);
+      await full.locator(".pr-row").last().waitFor();
+      assert.equal(await full.locator(".pr-row").count(), 40);
+      assert.equal(await full.locator(".repo-row:visible").count(), 5);
+      await full.getByRole("button", { name: "Show all 12 repositories" }).click();
+      assert.equal(await full.locator(".repo-row:visible").count(), 12);
+      await full.getByRole("button", { name: "Show fewer repositories" }).click();
+      assert.equal(await full.locator(".repo-row:visible").count(), 5);
+      await full.close();
+    }
+    await card.getByRole("button", { name: "Close activity card" }).click();
+    await card.waitFor({ state: "detached" });
+  }
+  evidence.push({
+    compactPreviewKeepsFullCounts: true,
+    fullReportIncludesAllRecords: true,
+    singleCardScrollWithManyRecords: true,
+    narrowAndShortViewports: true,
+  });
+  await popup.goto(`chrome-extension://${id}/popup.html#token-details`);
+  await popup.locator("#settings-heading").waitFor();
+  assert.equal(await popup.locator("#query").isVisible(), false);
+  assert.equal(await popup.locator("#token-details").getAttribute("open"), "");
+  await popup.locator("#clear").click();
+  await popup
+    .getByText("Credentials updated. Previous cached results were cleared.")
+    .waitFor();
+  assert.equal(await popup.locator("#auth").innerText(), "Anonymous mode");
+  evidence.push({ dedicatedSettingsView: true });
   const stored = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   await Promise.race([c.close(), new Promise((r) => setTimeout(r, 3000))]);
   c = await chromium.launchPersistentContext(profile, opts);

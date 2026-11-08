@@ -77,7 +77,9 @@ export function createService(storage, fetcher = fetch) {
     if (m.type === "openReport") {
       validate(m.user, 7);
       await chrome.tabs.create({
-        url: chrome.runtime.getURL("popup.html?user=" + encodeURIComponent(m.user)),
+        url: chrome.runtime.getURL(
+          "popup.html?user=" + encodeURIComponent(m.user) + "&days=7",
+        ),
       });
       return { ok: true };
     }

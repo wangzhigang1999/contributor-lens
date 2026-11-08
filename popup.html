@@ -17,9 +17,13 @@
         </svg>
         <span>Contributor Lens</span>
       </a>
-      <span class="header-note">Activity, with the receipts.</span>
+      <span class="header-note">GitHub pull request activity</span>
     </header>
     <main>
+      <div id="settings-heading" class="settings-heading" hidden>
+        <h1>Settings</h1>
+        <p>Manage your GitHub connection and view requests made on this device.</p>
+      </div>
       <form id="query" class="query-bar">
         <div class="username-field">
           <label for="user">GitHub username</label>
@@ -68,10 +72,10 @@
           <circle cx="36" cy="10" r="4" />
           <path d="M12 14v20m24-20v5a11 11 0 0 1-11 11H12" />
         </svg>
-        <h1>A clearer view of PR activity</h1>
+        <h1>Explore an author's pull requests</h1>
         <p>
-          Look up an author. See what they’ve opened across repositories.<br />Follow any
-          record back to GitHub.
+          Enter a GitHub username to see recent activity across repositories and open the
+          original pull requests.
         </p>
         <span>Public activity works without a token</span>
       </div>
@@ -106,6 +110,13 @@
               <span id="repo-count" class="subtle"></span>
             </div>
             <div id="repos"></div>
+            <button
+              id="more-repos"
+              class="quiet-button"
+              aria-controls="repos"
+              aria-expanded="false"
+              hidden
+            ></button>
           </section>
         </div>
         <section class="records-panel" aria-labelledby="records-heading">

@@ -47,7 +47,7 @@ CI also provides a signed CRX3. Chrome restricts off-store CRX installation on m
 
 ## Use
 
-- On an Issue or PR list, click **Check activity** next to an author. Nearby rows automatically show a seven-day summary. Expand the card for counts, repositories, and original PR links.
+- On an Issue or PR list, click **Check activity** next to an author. Nearby rows automatically show a seven-day summary. The card shows complete counts, the top three repositories, and the three newest PRs. **Open full report** loads all returned records in a tab.
 - On PR details, the entry stays near the author across Conversation, Commits, and Files changed. PR identity comes from the PR header and its REST record, never from timeline commenters or reviewers.
 - Open the toolbar popup to enter a username or prefill it from the current GitHub profile or PR. Choose 1, 7, 30, or 90 days, or enter any whole number from 1 to 365.
 - The toolbar popup shows PR counts. Open the full report in a tab to see the chart and original records. Settings and the request log also open in a tab.
