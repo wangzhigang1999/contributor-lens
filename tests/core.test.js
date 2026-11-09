@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { search, statistics, classify, markdown } from "../core.js";
+import { search, statistics, classify, markdown, isBot } from "../core.js";
 import { createService } from "../background.js";
 const now = Date.parse("2026-11-06T12:00:00Z");
 const pr = (id, time = now, state = "open", merged = null) => ({
@@ -26,6 +26,58 @@ function storage() {
 }
 const response = (status, data = {}, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers });
+test("bot queries are blocked before fetching, logging or caching", async () => {
+  const st = storage();
+  let requests = 0;
+  const svc = createService(st, async () => {
+    requests++;
+    return response(200, { total_count: 0, items: [] });
+  });
+  for (const user of [
+    "dependabot[bot]",
+    "Custom-App[BOT]",
+    "Dependabot",
+    "RENOVATE",
+    "renovate-bot",
+    "github-actions",
+  ]) {
+    await assert.rejects(svc.handle({ type: "query", user, days: 7 }), {
+      kind: "bot_excluded",
+    });
+    await assert.rejects(
+      search({
+        user,
+        days: 7,
+        request: () => {
+          requests++;
+        },
+      }),
+      { kind: "bot_excluded" },
+    );
+  }
+  assert.equal(requests, 0);
+  assert.deepEqual(await st.get(["logs", "cache"]), {
+    logs: undefined,
+    cache: undefined,
+  });
+  for (const user of ["robotics-dev", "botanist", "renovate-tools", "octocat"])
+    assert.equal(isBot(user), false);
+  assert.equal(
+    (await svc.handle({ type: "query", user: "robotics-dev", days: 7 })).ok,
+    true,
+  );
+  assert.equal(requests, 1);
+});
+test("PR author lookup excludes API Bot accounts without searching activity", async () => {
+  const st = storage();
+  const paths = [];
+  const svc = createService(st, async (url) => {
+    paths.push(new URL(url).pathname);
+    return response(200, { user: { login: "custom-automation", type: "Bot" } });
+  });
+  assert.deepEqual(await svc.handle({ type: "prAuthor", path: "o/r/1" }), { user: null });
+  assert.deepEqual(paths, ["/repos/o/r/pulls/1"]);
+});
 test("exact timestamps, three disjoint states, duplicates, future and cutoff date", async () => {
   const r = await search({
     user: "octocat",

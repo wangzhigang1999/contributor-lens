@@ -45,7 +45,9 @@ await c.route("https://api.github.com/**", async (route) => {
   let status = 200,
     data = { total_count: 0, items: [] },
     headers = {};
-  if (u.pathname.includes("/pulls/")) data = { user: { login: "pr-owner" } };
+  if (u.pathname.endsWith("/pulls/900"))
+    data = { user: { login: "custom-automation", type: "Bot" } };
+  else if (u.pathname.includes("/pulls/")) data = { user: { login: "pr-owner" } };
   else if (mode === "rate") {
     if (page === 1)
       data = {
@@ -218,6 +220,26 @@ try {
   evidence.push({ compactPopupFits: true, fullReportOpensWithQuery: true });
 
   mode = "zero";
+  const beforeManualBot = requests;
+  for (const user of ["dependabot[bot]", "RENOVATE", "custom-app[bot]"])
+    assert.match(await query(user), /Bot accounts are excluded/);
+  assert.equal(requests, beforeManualBot);
+  const botAuthors = [
+    '<a href="/o/r/issues?q=author%3Adependabot%5Bbot%5D">dependabot[bot]</a>',
+    '<a href="/dependabot">dependabot</a>',
+    '<a href="/RENOVATE">RENOVATE</a>',
+    '<a href="/github-actions">github-actions</a>',
+    '<a href="/apps/custom-app">custom-app</a>',
+    '<a data-hovercard-type="bot" href="/custom-worker">custom-worker</a>',
+    '<a data-hovercard-url="/users/another-app[bot]/hovercard">another-app[bot]</a>',
+    '<button data-hovercard-url="/users/button-app[bot]/hovercard">button-app[bot]</button>',
+  ];
+  const botRows = botAuthors
+    .map(
+      (author, i) =>
+        `<div class="Box-row bot-row" style="height:35px"><a href="/o/r/pull/${100 + i}">Bot PR ${i}</a><span class="opened-by">${author}</span><a data-hovercard-type="user" href="/not-the-author">assignee</a></div>`,
+    )
+    .join("");
   const rows = Array.from(
     { length: 35 },
     (_, i) =>
@@ -226,14 +248,27 @@ try {
   await c.route("https://github.com/**", (r) =>
     r.fulfill({
       contentType: "text/html",
-      body: `<main style="overflow:hidden;transform:translateZ(0)"><nav><a data-hovercard-type="user" href="/organization">organization</a></nav>${rows}<div class="Box-row" id="foreign"><a href="https://evil.test/o/r/issues/3">foreign</a><a class="author" href="/wrong">wrong</a></div><div class="Box-row" id="other"><a href="/else/repo/issues/3">other</a><a class="author" href="/wrong">wrong</a></div></main>`,
+      body: `<main style="overflow:hidden;transform:translateZ(0)"><nav><a data-hovercard-type="user" href="/organization">organization</a></nav>${botRows}${r.request().url().includes("bots=only") ? "" : rows}<div class="Box-row" id="foreign"><a href="https://evil.test/o/r/issues/3">foreign</a><a class="author" href="/wrong">wrong</a></div><div class="Box-row" id="other"><a href="/else/repo/issues/3">other</a><a class="author" href="/wrong">wrong</a></div></main>`,
     }),
   );
   await w.evaluate(() => chrome.storage.local.set({ logs: [], cache: [] }));
+  const beforeBotLists = requests;
+  for (const list of ["issues", "pulls"]) {
+    await p.goto(`https://github.com/o/r/${list}?bots=only`);
+    await p.waitForTimeout(500);
+    assert.equal(await p.locator(".cl-host").count(), 0);
+  }
+  assert.equal(requests, beforeBotLists);
+  assert.deepEqual((await w.evaluate(() => chrome.storage.local.get("logs"))).logs, []);
+  evidence.push({
+    botOnlyLists: "zero requests and zero buttons",
+    manualBotQueries: "blocked locally",
+  });
   await p.goto("https://github.com/o/r/issues");
   await p.waitForTimeout(1600);
   assert.equal(await p.locator(".cl-host").count(), 35);
   assert.equal(await p.locator(".cl-host").first().getAttribute("data-user"), "person0");
+  assert.equal(await p.locator(".bot-row .cl-host").count(), 0);
   assert.equal(await p.locator("#foreign .cl-host, #other .cl-host").count(), 0);
   let ls = (await w.evaluate(() => chrome.storage.local.get("logs"))).logs;
   assert.equal(ls.length, 4);
@@ -294,7 +329,7 @@ try {
     singleCardAndEscapeDismissal: true,
   });
   await p.evaluate(() => {
-    const row = document.querySelector(".Box-row");
+    const row = document.querySelector(".Box-row:not(.bot-row)");
     row.replaceWith(row.cloneNode(true));
     document.querySelectorAll(".cl-host").forEach((h) => {
       if (!h.shadowRoot) h.remove();
@@ -372,6 +407,47 @@ try {
     titleUntouched: true,
     entryBelowAuthor: true,
     summaryRestoredAfterRerender: true,
+  });
+  await c.route("https://github.com/o/r/pull/90**", (route) => {
+    const n = new URL(route.request().url()).pathname.split("/")[4];
+    const author =
+      n === "900"
+        ? ""
+        : n === "901"
+          ? '<a class="author" href="/dependabot">dependabot[bot]</a>'
+          : '<a href="/apps/custom-app">custom-app</a>';
+    return route.fulfill({
+      contentType: "text/html",
+      body: `<main><div class="gh-header"><h1>Bot PR</h1><div class="gh-header-meta">${author}</div></div><a class="author" href="/reviewer">reviewer</a></main>`,
+    });
+  });
+  for (const n of [901, 902, 900]) {
+    for (const suffix of ["", "/commits", "/files"]) {
+      const before = requests;
+      await p.goto(`https://github.com/o/r/pull/${n}${suffix}`);
+      await p.waitForTimeout(500);
+      await p.locator("h1").evaluate((h) => h.after(document.createElement("span")));
+      await p.waitForTimeout(200);
+      assert.equal(await p.locator(".cl-host").count(), 0, `Bot PR ${n}${suffix}`);
+      assert.equal(requests - before, n === 900 ? 1 : 0, `Bot PR requests ${n}${suffix}`);
+      const context = await popup.evaluate(async () => {
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+          const context = await chrome.tabs
+            .sendMessage(tab.id, { type: "context" })
+            .catch(() => null);
+          if (context?.excluded) return context;
+        }
+      });
+      assert.deepEqual(context, { user: null, excluded: true });
+    }
+  }
+  await c.unroute("https://github.com/o/r/pull/90**");
+  await p.goto("https://github.com/o/r/pull/9");
+  await p.locator('.cl-host[data-placement="detail"]').waitFor();
+  evidence.push({
+    botPrDetailsAcrossTabs: "no buttons or searches",
+    unmarkedApiBot: "one identity lookup, no activity query or remount",
   });
   mode = "many";
   await w.evaluate(() => chrome.storage.local.set({ cache: [] }));

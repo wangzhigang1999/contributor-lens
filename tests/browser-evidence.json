@@ -25,13 +25,24 @@
     "markdown": true
   },
   {
+    "compactPopupFits": true,
+    "fullReportOpensWithQuery": true
+  },
+  {
+    "botOnlyLists": "zero requests and zero buttons",
+    "manualBotQueries": "blocked locally"
+  },
+  {
     "listRows": 35,
     "anonymousAutoQueries": 4,
-    "manualOverBudget": true
+    "manualOverBudget": true,
+    "cardAnchoredAboveAndBelow": true,
+    "compactZeroActivityCard": true,
+    "singleCardAndEscapeDismissal": true
   },
   {
     "authenticatedAutomaticAuthors": 24,
-    "authenticatedApiRequests": 25
+    "authenticatedApiRequests": 24
   },
   {
     "prIdentityAcrossTabs": true,
@@ -39,6 +50,19 @@
     "titleUntouched": true,
     "entryBelowAuthor": true,
     "summaryRestoredAfterRerender": true
+  },
+  {
+    "botPrDetailsAcrossTabs": "no buttons or searches",
+    "unmarkedApiBot": "one identity lookup, no activity query or remount"
+  },
+  {
+    "compactPreviewKeepsFullCounts": true,
+    "fullReportIncludesAllRecords": true,
+    "singleCardScrollWithManyRecords": true,
+    "narrowAndShortViewports": true
+  },
+  {
+    "dedicatedSettingsView": true
   },
   {
     "browserRestartPersistence": true

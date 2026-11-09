@@ -13,6 +13,7 @@ const zip = await readFile(path.join(root, "dist", base + ".zip"));
 const files = [
   "manifest.json",
   "background.js",
+  "authors.js",
   "content.js",
   "core.js",
   "popup.html",

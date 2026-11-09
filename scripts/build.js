@@ -13,6 +13,7 @@ const output = path.join(root, "dist");
 export const extensionFiles = [
   "manifest.json",
   "background.js",
+  "authors.js",
   "content.js",
   "core.js",
   "popup.html",

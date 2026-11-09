@@ -28,6 +28,7 @@ Historical evidence lives in `tests/live-evidence.json`, `tests/live-report.png`
 - Log copying, Markdown copying, state filtering, and title searching.
 - Thirty-five rows mixing relative and absolute same-origin item URLs, profile links, author-filter links, and user hovercard buttons. Foreign origins, other repositories, navigation organizations, and leading assignees must not be mistaken for row authors.
 - Four automatic anonymous author queries, manual querying beyond that budget, and at most 24 authenticated automatic queries.
+- Bot-only Issue/PR lists produce no activity buttons or API requests; mixed lists retain the full human-author query budget. Manual bot queries are blocked locally. Bot PR headers remain excluded across Conversation, Commits, Files changed, and DOM replacement; an API-only Bot author needs one identity lookup and no activity search.
 - Row replacement without duplicate entries.
 - A PR header author distinct from timeline reviewers across all three tabs.
 - Persistent logs after closing and restarting Chromium.

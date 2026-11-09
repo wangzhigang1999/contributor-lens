@@ -28,6 +28,7 @@ const errors = {
   network: "Network request failed. Check your connection.",
   credentials_changed: "Your token changed. Run the query again.",
   validation: "Enter a valid username and a day range from 1 to 365.",
+  bot_excluded: "Bot accounts are excluded. No GitHub API request was made.",
 };
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -373,7 +374,7 @@ if (preset) {
       .sendMessage(tab.id, { type: "context" })
       .catch(() => null);
     if (context?.user) $("user").value = context.user;
-    else if (tab.url) {
+    else if (!context?.excluded && tab.url) {
       const u = new URL(tab.url);
       const m =
         u.origin === "https://github.com" &&

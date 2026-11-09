@@ -1,4 +1,4 @@
-import { search, classify, validate } from "./core.js";
+import { search, classify, validate, isBot } from "./core.js";
 export function createService(storage, fetcher = fetch) {
   let serial = Promise.resolve(),
     generation = 0,
@@ -121,7 +121,7 @@ export function createService(storage, fetcher = fetch) {
         token,
         operation: "pr_author",
       });
-      return { user: p.user.login };
+      return { user: p.user.type === "Bot" || isBot(p.user.login) ? null : p.user.login };
     }
     if (m.type !== "query") throw new Error("Unknown operation");
     validate(m.user, m.days);

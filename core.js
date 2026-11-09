@@ -1,3 +1,5 @@
+import "./authors.js";
+export const isBot = globalThis.ContributorLensAuthors.isBot;
 export const validUser = (u) =>
   typeof u === "string" && /^[a-z\d](?:[a-z\d-]{0,38})(?:\[bot\])?$/i.test(u);
 export function validate(user, days) {
@@ -8,6 +10,10 @@ export function validate(user, days) {
         kind: "validation",
       },
     );
+  if (isBot(user))
+    throw Object.assign(new Error("Bot accounts are excluded from activity queries."), {
+      kind: "bot_excluded",
+    });
 }
 export function classify(status, h, body = "") {
   if (status === 401) return "token_rejected";

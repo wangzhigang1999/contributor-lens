@@ -1,5 +1,6 @@
 (() => {
   const send = (m) => chrome.runtime.sendMessage(m),
+    isBot = globalThis.ContributorLensAuthors.isBot,
     valid = (u) => /^[a-z\d][a-z\d-]{0,38}(?:\[bot\])?$/i.test(u || "");
   let pageKey = "",
     auto = new Set(),
@@ -8,6 +9,7 @@
     limit = 4,
     detail = "",
     detailUser = "",
+    excludedDetail = "",
     openCard,
     scanTimer;
   const hosts = new Set();
@@ -77,7 +79,16 @@
       ? m[1]
       : null;
   }
+  function botAuthor(el, user) {
+    return (
+      isBot(user) ||
+      el?.getAttribute("data-hovercard-type") === "bot" ||
+      /\[bot\]\s*$/i.test(el?.textContent.trim() || "") ||
+      /^\/apps\/[^/]+\/?$/.test(url(el?.getAttribute("href") || "")?.pathname || "")
+    );
+  }
   function make(anchor, user, detailEntry = false) {
+    if (isBot(user)) return;
     const owner = detailEntry ? anchor : anchor.parentElement;
     if (owner?.querySelector(":scope > .cl-host")) {
       const old = owner.querySelector(":scope > .cl-host");
@@ -359,6 +370,7 @@
       hosts.clear();
       detailUser = "";
       detail = "";
+      excludedDetail = "";
       send({ type: "settings" })
         .then((s) => {
           limit = s.authenticated ? 24 : 4;
@@ -369,6 +381,7 @@
     const match = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/.*)?$/);
     if (match) {
       const path = match.slice(1).join("/");
+      if (excludedDetail === path) return;
       // Resolve a header that owns the title AND its author description.
       // TitleArea alone is not an author container and must never receive an entry.
       const heading = document.querySelector("main h1");
@@ -386,6 +399,13 @@
         description?.querySelector('a.author, a[data-hovercard-type="user"], a[href]') ||
         header?.querySelector("a.author");
       const initialUser = initialAuthor && author(initialAuthor);
+      if (botAuthor(initialAuthor, initialUser)) {
+        header?.querySelectorAll(".cl-host").forEach((h) => h.remove());
+        detailUser = "";
+        detail = path;
+        excludedDetail = path;
+        return;
+      }
       if (!detailUser && initialUser) detailUser = initialUser;
       const mount = () => {
         if (!detailUser || !header) return;
@@ -404,7 +424,13 @@
         try {
           const response = await send({ type: "prAuthor", path });
           if (detail !== path) return;
-          detailUser = response.user || detailUser;
+          if (Object.hasOwn(response, "user")) {
+            detailUser = response.user;
+            if (!detailUser) {
+              excludedDetail = path;
+              header?.querySelectorAll(".cl-host").forEach((h) => h.remove());
+            }
+          }
           mount();
         } catch {
           detail = "";
@@ -430,13 +456,14 @@
       );
       if (!row) continue;
       const primary = row.querySelectorAll(
-        '.opened-by a, a.author, [data-testid="author-filter-link"], a[href*="author"]',
+        '.opened-by a, .opened-by button[data-hovercard-url], a.author, [data-testid="author-filter-link"], a[href*="author"], a[data-hovercard-type="bot"], a[href^="/apps/"]',
       );
       const fallback = row.querySelectorAll(
         'a[data-hovercard-type="user"], button[data-hovercard-url], a[data-hovercard-url]',
       );
       for (const candidate of new Set([...primary, ...fallback])) {
         const user = author(candidate);
+        if (botAuthor(candidate, user)) break;
         if (user) {
           make(candidate, user);
           break;
@@ -466,15 +493,15 @@
     }
     if (m.type === "context") {
       const p = location.pathname.match(/^\/([^/]+)\/?$/);
-      reply({
-        user:
-          detailUser ||
-          (p &&
-          valid(p[1]) &&
-          document.querySelector("[itemprop=additionalName], .vcard-username")
-            ? p[1]
-            : null),
-      });
+      const user =
+        detailUser ||
+        (p &&
+        valid(p[1]) &&
+        document.querySelector("[itemprop=additionalName], .vcard-username")
+          ? p[1]
+          : null);
+      const excluded = isBot(user) || !!excludedDetail;
+      reply({ user: excluded ? null : user, excluded });
     }
   });
   scan();
